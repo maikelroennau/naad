@@ -5,7 +5,7 @@ North American Airport Delays
 This project aims to create a distributed system to calculate the arrivals and depatures delays of North American airports between 1987 and 2008.
 
 ## Architecture
-[Architecture sequence](architecture_sequence.jpg)
+[Architecture sequence](/architecture_sequence.jpg)
 
 
 ## Motivation
