@@ -5,8 +5,7 @@ North American Airport Delays
 This project aims to create a distributed system to calculate the arrivals and depatures delays of North American airports between 1987 and 2008.
 
 ## Architecture
-[Architecture sequence](/architecture_sequence.jpg)
-
+![alt text](architecture_sequence.jpg)
 
 ## Motivation
 This project is an universitary study for Distributed Systems subject, ministred by Prof. Tales Tales Bitelo Viegas.
