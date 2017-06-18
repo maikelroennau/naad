@@ -39,6 +39,10 @@ public class Server {
 
     private int[] years;
 
+    private final boolean showServerLogs = true;
+    private final boolean showSErverConfigurations = true;
+    private final boolean showMemcachedLogs = false;
+
     private final String ERROR_LOG = "ERROR: ";
     private final String INFO = "INFO.: ";
 
@@ -58,6 +62,7 @@ public class Server {
     // =======================================================================//
     // Initialization
     // -----------------------------------------------------------------------//
+    
     public Server() {
         initializeServerConfiguration();
         putServerOnline();
@@ -86,26 +91,27 @@ public class Server {
             this.connection = new ServerSocket(this.serverPort);
             showLogMessage("Server online.", INFO);
         } catch (IOException e) {
-            showLogMessage("Failed to initialize server online.", ERROR_LOG);
+            showLogMessage("Failed to put server online. Cause: " + e.getMessage(), ERROR_LOG);
             shutdown();
         }
     }
 
     private void registerToMemcached() {
         try {
-            System.setProperty("net.spy.log.LoggerImpl", "net.spy.memcached.compat.log.SunLogger");
-            Logger.getLogger("net.spy.memcached").setLevel(Level.WARNING);
+            if(showMemcachedLogs) {
+                System.setProperty("net.spy.log.LoggerImpl", "net.spy.memcached.compat.log.SunLogger");
+                Logger.getLogger("net.spy.memcached").setLevel(Level.WARNING);
+            }
 
             MemcachedClient memcached = new MemcachedClient(new InetSocketAddress(this.memcachedIP, this.memcachedport));
 
             if (memcached.get("servers") == null) {
-
                 showLogMessage("Registering to memchached.", INFO);
-                memcached.set("servers", this.validTime, this.jsonConfiguration.toString());
+                memcached.add("servers", this.validTime, this.jsonConfiguration.toString());
                 showLogMessage("Server registered to memchached.", INFO);
             } else {
+//                memcached.touch("servers", this.validTime);
                 showLogMessage("Updating server information to memchached.", INFO);
-                this.jsonConfiguration = getJSONMemcachedMessage();
                 memcached.append("servers", this.jsonConfiguration.toString());
                 showLogMessage("Successfully updated server information to memchached.", INFO);
             }
@@ -172,6 +178,7 @@ public class Server {
     // =======================================================================//
     // Execution
     // -----------------------------------------------------------------------//
+    
     private void run() {
         showLogMessage("Receiving requisitions.", INFO);
         while (true) {
@@ -202,6 +209,7 @@ public class Server {
     // =======================================================================//
     // JSON
     // -----------------------------------------------------------------------//
+    
     private JSONObject getJSONMemcachedMessage() {
 
         JSONObject json = new JSONObject();
@@ -233,17 +241,22 @@ public class Server {
     // =======================================================================//
     // Utilities
     // -----------------------------------------------------------------------//
+    
     public void showLogMessage(String message, String type) {
-        System.out.println(this.getClass().getSimpleName() + " - " + type + message);
+        if (showServerLogs) {
+            System.out.println(this.getClass().getSimpleName() + " - " + type + message);
+        }
     }
 
     public void showConfiguration() {
-        System.out.println("\nConfiguration file: " + configurationFile
-                + "\nServer name.......: " + serverName
-                + "\nPort..............: " + serverPort
-                + "\nMemcached IP......: " + memcachedIP
-                + "\nMemcached port....: " + memcachedport
-                + "\nYears.............: " + Arrays.toString(years).replace("[", "").replace("]", "") + "\n");
+        if (showSErverConfigurations) {
+            System.out.println("\nConfiguration file: " + configurationFile
+                    + "\nServer name.......: " + serverName
+                    + "\nPort..............: " + serverPort
+                    + "\nMemcached IP......: " + memcachedIP
+                    + "\nMemcached port....: " + memcachedport
+                    + "\nYears.............: " + Arrays.toString(years).replace("[", "").replace("]", "") + "\n");
+        }
     }
 
     public void shutdown() {
