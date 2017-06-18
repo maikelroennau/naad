@@ -95,11 +95,7 @@ public class Server implements Serializable {
 
         try {
             MemcachedClient memcached = new MemcachedClient(new InetSocketAddress(this.memcachedIP, this.memcachedport));
-
             memcached.set("servers", this.validTime, this.jsonCOnfiguration.toString());
-
-            System.out.println(memcached.get("servers"));
-
         } catch (IOException e) {
             showLogMessage("Failed to register to memcached.", ERROR_LOG);
         }
@@ -136,7 +132,7 @@ public class Server implements Serializable {
         this.memcachedport = json.getInt("memcachedPort");
 
         try {
-            this.serverIP = InetAddress.getLocalHost().toString();
+            this.serverIP = InetAddress.getLocalHost().toString().split("/")[1];
         } catch (UnknownHostException e) {
             showLogMessage("Unable to get local IP address.", ERROR_LOG);
         }
