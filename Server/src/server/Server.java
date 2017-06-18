@@ -16,7 +16,12 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import net.spy.memcached.MemcachedClient;
+import net.spy.memcached.OperationTimeoutException;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -24,7 +29,7 @@ import org.json.JSONObject;
  *
  * @author Maikel Maciel Rönnau
  */
-public class Server implements Serializable {
+public class Server {
 
     private final String configurationFile = "config.json";
 
@@ -41,8 +46,7 @@ public class Server implements Serializable {
     private final String INFO = "INFO.: ";
 
     // Connection settings
-    
-    private JSONObject jsonCOnfiguration;
+    private JSONObject jsonConfiguration;
     private ServerSocket connection;
     private final int validTime = 60;
 
@@ -67,13 +71,13 @@ public class Server implements Serializable {
 
     private void initializeServerConfiguration() {
         String configuration = readConfiguration(configurationFile);
-        this.jsonCOnfiguration = parseJSONConfigurationFile(configuration);
+        this.jsonConfiguration = parseJSONConfigurationFile(configuration);
 
-        if (this.jsonCOnfiguration == null) {
+        if (this.jsonConfiguration == null) {
             showLogMessage("Failed to load configutations", ERROR_LOG);
             shutdown();
         } else {
-            setAttibutes(this.jsonCOnfiguration);
+            setAttibutes(this.jsonConfiguration);
         }
 
         showLogMessage("Configurations set.", INFO);
@@ -87,20 +91,32 @@ public class Server implements Serializable {
             showLogMessage("Server online.", INFO);
         } catch (IOException e) {
             showLogMessage("Failed to initialize server online.", ERROR_LOG);
+            shutdown();
         }
     }
 
     private void registerToMemcached() {
-        showLogMessage("Registering to memchached.", INFO);
-
         try {
-            MemcachedClient memcached = new MemcachedClient(new InetSocketAddress(this.memcachedIP, this.memcachedport));
-            memcached.set("servers", this.validTime, this.jsonCOnfiguration.toString());
-        } catch (IOException e) {
-            showLogMessage("Failed to register to memcached.", ERROR_LOG);
-        }
+            System.setProperty("net.spy.log.LoggerImpl", "net.spy.memcached.compat.log.SunLogger");
+            Logger.getLogger("net.spy.memcached").setLevel(Level.WARNING);
 
-        showLogMessage("Server registered.", INFO);
+            MemcachedClient memcached = new MemcachedClient(new InetSocketAddress(this.memcachedIP, this.memcachedport));
+
+            if (memcached.get("servers") == null) {
+                
+                showLogMessage("Registering to memchached.", INFO);
+                memcached.set("servers", this.validTime, this.jsonConfiguration.toString());
+                showLogMessage("Server registered to memchached.", INFO);
+            } else {
+                showLogMessage("Updating server information to memchached.", INFO);
+                this.jsonConfiguration = getJSONMemcachedMessage();
+                memcached.append("servers", this.jsonConfiguration.toString());
+                showLogMessage("Successfully updated server information to memchached.", INFO);
+            }
+        } catch (IOException | SecurityException | OperationTimeoutException e) {
+            showLogMessage("Failed to register to memcached. Cause: " + e.getCause().getMessage(), ERROR_LOG);
+            shutdown();
+        }
     }
 
     public String readConfiguration(String filename) {
@@ -121,6 +137,7 @@ public class Server implements Serializable {
             result = sb.toString();
         } catch (IOException e) {
             showLogMessage("Failed to read configuration file.", ERROR_LOG);
+            shutdown();
         }
         return result;
     }
@@ -135,6 +152,7 @@ public class Server implements Serializable {
             this.serverIP = InetAddress.getLocalHost().toString().split("/")[1];
         } catch (UnknownHostException e) {
             showLogMessage("Unable to get local IP address.", ERROR_LOG);
+            shutdown();
         }
 
         String years;
@@ -149,7 +167,7 @@ public class Server implements Serializable {
             this.years[i] = Integer.parseInt(readYears.get(i));
         }
 
-        this.jsonCOnfiguration = getJSONMemcachedMessage();
+        this.jsonConfiguration = getJSONMemcachedMessage();
     }
 
     // -----------------------------------------------------------------------//
@@ -209,6 +227,7 @@ public class Server implements Serializable {
             return json;
         } catch (JSONException e) {
             showLogMessage("Failed to create JSON from file.", ERROR_LOG);
+            shutdown();
         }
 
         return null;
