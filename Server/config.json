@@ -1,0 +1,7 @@
+{
+  "serverName" : "serverMaikel",
+  "portListen" : 1223,
+  "memcachedServer" : "10.1.1.1",
+  "memcachedPort" : 1200,
+  "yearData" : [1997, 1998]
+}
