@@ -40,7 +40,7 @@ public class Server {
     private int[] years;
 
     private final boolean showServerLogs = true;
-    private final boolean showSErverConfigurations = true;
+    private final boolean showSErverConfigurations = false;
     private final boolean showMemcachedLogs = false;
 
     private final String ERROR_LOG = "ERROR: ";
@@ -98,7 +98,7 @@ public class Server {
 
     private void registerToMemcached() {
         try {
-            if(showMemcachedLogs) {
+            if(!showMemcachedLogs) {
                 System.setProperty("net.spy.log.LoggerImpl", "net.spy.memcached.compat.log.SunLogger");
                 Logger.getLogger("net.spy.memcached").setLevel(Level.WARNING);
             }
