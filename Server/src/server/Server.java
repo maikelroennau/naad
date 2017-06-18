@@ -46,10 +46,11 @@ public class Server {
     public Server() {
         initializeServerConfiguration();
         putServerOnline();
+        registerToMemcached();
         run();
     }
 
-    public void putServerOnline() {
+    private void putServerOnline() {
         try {
             showLogMessage("Initializing server.", INFO);
             this.connection = new ServerSocket(this.port);
@@ -58,8 +59,14 @@ public class Server {
             showLogMessage("Failed to initialize server online.", ERROR_LOG);
         }
     }
+    
+    private void registerToMemcached() {
+        showLogMessage("Registering to memchached.", INFO);
 
-    public void run() {
+        showLogMessage("Server registered.", INFO);
+    }
+
+    private void run() {
         showLogMessage("Receiving requisitions.", INFO);
         while (true) {
             try {
@@ -83,7 +90,7 @@ public class Server {
 
     }
 
-    public void initializeServerConfiguration() {
+    private void initializeServerConfiguration() {
         String configuration = readConfiguration(configurationFile);
         JSONObject json = parseJSONConfigurationFile(configuration);
 
@@ -130,6 +137,8 @@ public class Server {
     }
 
     public String readConfiguration(String filename) {
+        showLogMessage("Reading configuration file.", INFO);
+        
         String result = "";
 
         try {
