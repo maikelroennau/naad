@@ -8,7 +8,6 @@ package server;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -16,8 +15,6 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.spy.memcached.MemcachedClient;
@@ -61,7 +58,6 @@ public class Server {
     // =======================================================================//
     // Initialization
     // -----------------------------------------------------------------------//
-    
     public Server() {
         initializeServerConfiguration();
         putServerOnline();
@@ -103,7 +99,7 @@ public class Server {
             MemcachedClient memcached = new MemcachedClient(new InetSocketAddress(this.memcachedIP, this.memcachedport));
 
             if (memcached.get("servers") == null) {
-                
+
                 showLogMessage("Registering to memchached.", INFO);
                 memcached.set("servers", this.validTime, this.jsonConfiguration.toString());
                 showLogMessage("Server registered to memchached.", INFO);
@@ -176,7 +172,6 @@ public class Server {
     // =======================================================================//
     // Execution
     // -----------------------------------------------------------------------//
-    
     private void run() {
         showLogMessage("Receiving requisitions.", INFO);
         while (true) {
@@ -207,7 +202,6 @@ public class Server {
     // =======================================================================//
     // JSON
     // -----------------------------------------------------------------------//
-    
     private JSONObject getJSONMemcachedMessage() {
 
         JSONObject json = new JSONObject();
@@ -239,7 +233,6 @@ public class Server {
     // =======================================================================//
     // Utilities
     // -----------------------------------------------------------------------//
-    
     public void showLogMessage(String message, String type) {
         System.out.println(this.getClass().getSimpleName() + " - " + type + message);
     }
