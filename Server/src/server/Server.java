@@ -8,6 +8,8 @@ package server;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -39,7 +41,7 @@ public class Server {
 
     private int[] years;
 
-    private final boolean showServerLogs = true;
+    private final boolean showServerLogs = false;
     private final boolean showSErverConfigurations = false;
     private final boolean showMemcachedLogs = false;
 
@@ -107,12 +109,21 @@ public class Server {
 
             if (memcached.get("servers") == null) {
                 showLogMessage("Registering to memchached.", INFO);
-                memcached.add("servers", this.validTime, this.jsonConfiguration.toString());
+                
+                JSONObject registeredServers = new JSONObject();
+                registeredServers.append("servers", this.jsonConfiguration);
+                
+                memcached.set("servers", this.validTime, registeredServers.toString());
                 showLogMessage("Server registered to memchached.", INFO);
             } else {
-//                memcached.touch("servers", this.validTime);
                 showLogMessage("Updating server information to memchached.", INFO);
-                memcached.append("servers", this.jsonConfiguration.toString());
+                
+                JSONObject registeredServers = new JSONObject(memcached.get("servers").toString());
+                registeredServers.append("servers", this.jsonConfiguration);
+                
+                // Check if the server is already registered, if yes, just touch  or update
+                
+                memcached.set("servers", this.validTime, registeredServers.toString());
                 showLogMessage("Successfully updated server information to memchached.", INFO);
             }
         } catch (IOException | SecurityException | OperationTimeoutException e) {
@@ -200,7 +211,28 @@ public class Server {
 
     public void attendRequisition(Socket clientSocket) {
         showLogMessage("Requisition received from " + clientSocket.getLocalAddress().toString().replace("/", "") + ".", INFO);
+        
+        //PrintWriter pw;
+        //BufferedReader br;
+        try {
+            PrintWriter pw = new PrintWriter(clientSocket.getOutputStream(), true);
+            BufferedReader br = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
+            String[] splitedCommand = br.readLine().split("\\s+");
+            String command = splitedCommand[0];
+            
+            switch(command) {
+                case "GETAVAILABLEYEARS":
+                    pw.println(getAvailableYears().toString());
+                    break;
+                    
+                
+            }
+        } catch (IOException e) {
+            showLogMessage("Failed to attend client requisition. Cause: " + e.getCause().getMessage(), INFO);
+        } finally {
+            
+        }
     }
 
     // -----------------------------------------------------------------------//
@@ -211,15 +243,17 @@ public class Server {
     // -----------------------------------------------------------------------//
     
     private JSONObject getJSONMemcachedMessage() {
-
-        JSONObject json = new JSONObject();
-
-        json.put("name", this.serverName);
-        json.put("location", this.serverIP + ":" + this.serverPort);
-        json.put("year", Arrays.toString(this.years));
-        json.put("active", true);
-
-        return json;
+        
+        JSONObject server = new JSONObject();
+        
+        server.put("name", this.serverName);
+        server.put("location", this.serverIP + ":" + this.serverPort);
+        for(int year : this.years) {
+            server.append("year", year);
+        }
+        server.put("active", true);
+     
+        return server;
     }
 
     public JSONObject parseJSONConfigurationFile(String data) {
@@ -237,6 +271,24 @@ public class Server {
 
     // -----------------------------------------------------------------------//
     // End JSON
+    // =======================================================================//
+    // =======================================================================//
+    // Requisitions
+    // -----------------------------------------------------------------------//
+    
+    public JSONObject getAvailableYears() {
+        JSONObject json = new JSONObject();
+        
+        for(int year : this.years) {
+            json.append("years", year);
+        }
+        
+        System.out.println(json.toString());
+        return json;
+    }
+    
+    // -----------------------------------------------------------------------//
+    // End Requisitions
     // =======================================================================//
     // =======================================================================//
     // Utilities
