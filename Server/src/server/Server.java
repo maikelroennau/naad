@@ -42,20 +42,18 @@ public class Server {
     private int[] years;
 
     private final boolean showServerLogs = true;
-    private final boolean showSErverConfigurations = true;
+    private final boolean showSErverConfigurations = false;
     private final boolean showMemcachedLogs = false;
 
     private final String ERROR_LOG = "ERROR: ";
-    private final String INFO = "INFO.: ";
+    private final String INFO_LOG = "INFO.: ";
 
-    // Connection settings ---------------------------------------------------//
-    
+    // Connection settings
     private JSONObject jsonConfiguration;
     private ServerSocket connection;
-    private final int validTime = 60;
+    private final int validTime = 30;
 
-    // -----------------------------------------------------------------------//
-    
+    // ----
     /**
      * @param args the command line arguments
      */
@@ -71,29 +69,9 @@ public class Server {
         initializeServerConfiguration();
         putServerOnline();
         registerToMemcached();
-        registerAvailableInformation();
         run();
     }
 
-    private void registerAvailableInformation() {
-        registerAvailableAirports();
-        registerAvailableCarries();
-    }
-
-    private void registerAvailableAirports() {
-        showLogMessage("Registering available airports.", INFO);
-    }
-
-    private void registerAvailableCarries() {
-        showLogMessage("Registering available carries.", INFO);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
-    
     private void initializeServerConfiguration() {
         String configuration = readConfiguration(configurationFile);
         this.jsonConfiguration = parseJSONConfigurationFile(configuration);
@@ -105,15 +83,15 @@ public class Server {
             setAttibutes(this.jsonConfiguration);
         }
 
-        showLogMessage("Configurations set.", INFO);
+        showLogMessage("Configurations set.", INFO_LOG);
         showConfiguration();
     }
 
     private void putServerOnline() {
         try {
-            showLogMessage("Initializing server.", INFO);
+            showLogMessage("Initializing server.", INFO_LOG);
             this.connection = new ServerSocket(this.serverPort);
-            showLogMessage("Server online.", INFO);
+            showLogMessage("Server online.", INFO_LOG);
         } catch (IOException e) {
             showLogMessage("Failed to put server online. Cause: " + e.getMessage(), ERROR_LOG);
             shutdown();
@@ -122,40 +100,35 @@ public class Server {
 
     private void registerToMemcached() {
         try {
-            if (!showMemcachedLogs) {
+            if(!showMemcachedLogs) {
                 System.setProperty("net.spy.log.LoggerImpl", "net.spy.memcached.compat.log.SunLogger");
-                Logger.getLogger("net.spy.memcached").setLevel(Level.OFF);
+                Logger.getLogger("net.spy.memcached").setLevel(Level.WARNING);
             }
 
-            showLogMessage("Connecting to memchached.", INFO);
+            showLogMessage("Registering server to memcached.", INFO_LOG);
+            
             MemcachedClient memcached = new MemcachedClient(new InetSocketAddress(this.memcachedIP, this.memcachedport));
-
-            if (memcached.get("servers") == null) {
-                showLogMessage("Registering to memchached.", INFO);
-
-                JSONObject registeredServers = new JSONObject();
-                registeredServers.append("servers", this.jsonConfiguration);
-
-                memcached.set("servers", this.validTime, registeredServers.toString());
-                showLogMessage("Server registered to memchached.", INFO);
+            JSONObject registeredServers = getOnlineServers(memcached);
+            
+            if(registeredServers.isNull("servers")) {
+                showLogMessage("Initializing memcached registry.", INFO_LOG);
+                JSONObject server = new JSONObject();
+                server.append("server", getJSONMemcachedMessage());
+                memcached.set("SD_ListServers", this.validTime, server.toString());
             } else {
-                showLogMessage("Updating server information to memchached.", INFO);
-
-                JSONObject registeredServers = new JSONObject(memcached.get("servers").toString());
-                registeredServers.append("servers", this.jsonConfiguration);
-
-                // Check if the server is already registered, if yes, just touch  or update
-                memcached.set("servers", this.validTime, registeredServers.toString());
-                showLogMessage("Successfully updated server information to memchached.", INFO);
+                registeredServers.append("servers", getJSONMemcachedMessage());
+                memcached.set("SD_ListServers", this.validTime, registeredServers.toString());
             }
+
+            showLogMessage("Server registered.", INFO_LOG);
         } catch (IOException | SecurityException | OperationTimeoutException e) {
             showLogMessage("Failed to register to memcached. Cause: " + e.getCause().getMessage(), ERROR_LOG);
             shutdown();
         }
     }
-
-    private String readConfiguration(String filename) {
-        showLogMessage("Reading configuration file.", INFO);
+    
+    public String readConfiguration(String filename) {
+        showLogMessage("Reading configuration file.", INFO_LOG);
 
         String result = "";
 
@@ -177,7 +150,7 @@ public class Server {
         return result;
     }
 
-    private void setAttibutes(JSONObject json) {
+    public void setAttibutes(JSONObject json) {
         this.serverName = json.getString("serverName");
         this.serverPort = json.getInt("portListen");
         this.memcachedIP = json.getString("memcachedServer");
@@ -213,7 +186,7 @@ public class Server {
     // -----------------------------------------------------------------------//
     
     private void run() {
-        showLogMessage("Receiving requisitions.", INFO);
+        showLogMessage("Receiving requisitions.", INFO_LOG);
         while (true) {
             try {
 
@@ -231,9 +204,9 @@ public class Server {
         }
     }
 
-    private void attendRequisition(Socket clientSocket) {
-        showLogMessage("Requisition received from " + clientSocket.getLocalAddress().toString().replace("/", "") + ".", INFO);
-
+    public void attendRequisition(Socket clientSocket) {
+        showLogMessage("Requisition received from " + clientSocket.getLocalAddress().toString().replace("/", "") + ".", INFO_LOG);
+        
         //PrintWriter pw;
         //BufferedReader br;
         try {
@@ -242,22 +215,18 @@ public class Server {
 
             String[] splitedCommand = br.readLine().split("\\s+");
             String command = splitedCommand[0];
-
-            switch (command) {
-                case "GETAVAILABLEYEARS": //GETAVAILABLEYEARS
+            
+            switch(command) {
+                case "GETAVAILABLEYEARS":
                     pw.println(getAvailableYears().toString());
                     break;
+                    
+                
             }
-
-            showLogMessage("Requisition from " + clientSocket.getLocalAddress().toString().replace("/", "") + " satisfied.", INFO);
-            showLogMessage("Closing connection with " + clientSocket.getLocalAddress().toString().replace("/", ""), INFO);
-
-            pw.close();
-            br.close();
         } catch (IOException e) {
-            showLogMessage("Failed to attend client requisition. Cause: " + e.getCause().getMessage(), INFO);
+            showLogMessage("Failed to attend client requisition. Cause: " + e.getCause().getMessage(), INFO_LOG);
         } finally {
-
+            
         }
     }
 
@@ -269,20 +238,33 @@ public class Server {
     // -----------------------------------------------------------------------//
     
     private JSONObject getJSONMemcachedMessage() {
-
         JSONObject server = new JSONObject();
-
+        
         server.put("name", this.serverName);
         server.put("location", this.serverIP + ":" + this.serverPort);
-        for (int year : this.years) {
+        for(int year : this.years) {
             server.append("year", year);
         }
         server.put("active", true);
 
         return server;
     }
+    
+    public JSONObject getOnlineServers(MemcachedClient memcached) {
+        String response = "";
+        JSONObject serversOnline = new JSONObject();
+        
+        try {
+            response = memcached.get("SD_ListServers").toString();
+            serversOnline = new JSONObject(response);
+        } catch (NullPointerException e) {
+            showLogMessage("No servers online.", INFO_LOG);
+        }
+        
+        return serversOnline;
+    }
 
-    private JSONObject parseJSONConfigurationFile(String data) {
+    public JSONObject parseJSONConfigurationFile(String data) {
         try {
             JSONObject json = new JSONObject(data);
 
@@ -302,41 +284,17 @@ public class Server {
     // Requisitions
     // -----------------------------------------------------------------------//
     
-    private JSONObject getAvailableYears() {
-        JSONObject availableYears = new JSONObject();
-
-        for (int year : this.years) {
-            availableYears.append("years", year);
+    public JSONObject getAvailableYears() {
+        JSONObject json = new JSONObject();
+        
+        for(int year : this.years) {
+            json.append("years", year);
         }
-
-//        try {
-//            MemcachedClient memcached = new MemcachedClient(new InetSocketAddress(this.memcachedIP, this.memcachedport));
-//
-//            JSONObject servers = new JSONObject(memcached.get("servers").toString());
-//            JSONArray array = servers.getJSONArray("servers");
-//            JSONObject server;
-//
-//            String serverYears[];
-//
-//            for (int i = 0; i < array.length(); i++) {
-//                server = array.getJSONObject(i);
-//                serverYears = server.get("year").toString().split(",");
-//
-//                // Finish the parse o the years registered on memcached.
-//
-//                for(String year : serverYears) {
-//                    year = year.replaceAll("[", "");
-//                    year = year.replace("]", "");
-//                    availableYears.append("years", Integer.parseInt(year));
-//                }
-//            }
-//        } catch (IOException | SecurityException | OperationTimeoutException e) {
-//            showLogMessage("Failed to register to memcached. Cause: " + e.getCause().getMessage(), ERROR_LOG);
-//            shutdown();
-//        }
-        return availableYears;
+        
+        System.out.println(json.toString());
+        return json;
     }
-
+    
     // -----------------------------------------------------------------------//
     // End Requisitions
     // =======================================================================//
@@ -344,13 +302,13 @@ public class Server {
     // Utilities
     // -----------------------------------------------------------------------//
     
-    private void showLogMessage(String message, String type) {
+    public void showLogMessage(String message, String type) {
         if (showServerLogs) {
             System.out.println(this.getClass().getSimpleName() + " - " + type + message);
         }
     }
 
-    private void showConfiguration() {
+    public void showConfiguration() {
         if (showSErverConfigurations) {
             System.out.println("\nConfiguration file: " + configurationFile
                     + "\nServer name.......: " + serverName
@@ -361,8 +319,8 @@ public class Server {
         }
     }
 
-    private void shutdown() {
-        showLogMessage("Shutting system down.", INFO);
+    public void shutdown() {
+        showLogMessage("Shutting system down.", INFO_LOG);
         System.exit(0);
     }
 
