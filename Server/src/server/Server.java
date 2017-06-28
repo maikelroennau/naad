@@ -77,23 +77,23 @@ public class Server {
         this.jsonConfiguration = parseJSONConfigurationFile(configuration);
 
         if (this.jsonConfiguration == null) {
-            showLogMessage("Failed to load configutations", ERROR_LOG);
+            Log.showLogMessage(this.getClass().getSimpleName(), "Failed to load configutations", ERROR_LOG);
             shutdown();
         } else {
             setAttibutes(this.jsonConfiguration);
         }
 
-        showLogMessage("Configurations set.", INFO_LOG);
+        Log.showLogMessage(this.getClass().getSimpleName(), "Configurations set.", INFO_LOG);
         showConfiguration();
     }
 
     private void putServerOnline() {
         try {
-            showLogMessage("Initializing server.", INFO_LOG);
+            Log.showLogMessage(this.getClass().getSimpleName(), "Initializing server.", INFO_LOG);
             this.connection = new ServerSocket(this.serverPort);
-            showLogMessage("Server online.", INFO_LOG);
+            Log.showLogMessage(this.getClass().getSimpleName(), "Server online.", INFO_LOG);
         } catch (IOException e) {
-            showLogMessage("Failed to put server online. Cause: " + e.getMessage(), ERROR_LOG);
+            Log.showLogMessage(this.getClass().getSimpleName(), "Failed to put server online. Cause: " + e.getMessage(), ERROR_LOG);
             shutdown();
         }
     }
@@ -105,13 +105,13 @@ public class Server {
                 Logger.getLogger("net.spy.memcached").setLevel(Level.WARNING);
             }
 
-            showLogMessage("Registering server to memcached.", INFO_LOG);
+            Log.showLogMessage(this.getClass().getSimpleName(), "Registering server to memcached.", INFO_LOG);
             
             MemcachedClient memcached = new MemcachedClient(new InetSocketAddress(this.memcachedIP, this.memcachedport));
             JSONObject registeredServers = getOnlineServers(memcached);
             
             if(registeredServers.isNull("servers")) {
-                showLogMessage("Initializing memcached registry.", INFO_LOG);
+                Log.showLogMessage(this.getClass().getSimpleName(), "Initializing memcached registry.", INFO_LOG);
                 JSONObject server = new JSONObject();
                 server.append("server", getJSONMemcachedMessage());
                 memcached.set("SD_ListServers", this.validTime, server.toString());
@@ -120,15 +120,15 @@ public class Server {
                 memcached.set("SD_ListServers", this.validTime, registeredServers.toString());
             }
 
-            showLogMessage("Server registered.", INFO_LOG);
+            Log.showLogMessage(this.getClass().getSimpleName(), "Server registered.", INFO_LOG);
         } catch (IOException | SecurityException | OperationTimeoutException e) {
-            showLogMessage("Failed to register to memcached. Cause: " + e.getCause().getMessage(), ERROR_LOG);
+            Log.showLogMessage(this.getClass().getSimpleName(), "Failed to register to memcached. Cause: " + e.getCause().getMessage(), ERROR_LOG);
             shutdown();
         }
     }
     
     public String readConfiguration(String filename) {
-        showLogMessage("Reading configuration file.", INFO_LOG);
+        Log.showLogMessage(this.getClass().getSimpleName(), "Reading configuration file.", INFO_LOG);
 
         String result = "";
 
@@ -144,7 +144,7 @@ public class Server {
 
             result = sb.toString();
         } catch (IOException e) {
-            showLogMessage("Failed to read configuration file.", ERROR_LOG);
+            Log.showLogMessage(this.getClass().getSimpleName(), "Failed to read configuration file.", ERROR_LOG);
             shutdown();
         }
         return result;
@@ -159,7 +159,7 @@ public class Server {
         try {
             this.serverIP = InetAddress.getLocalHost().toString().split("/")[1];
         } catch (UnknownHostException e) {
-            showLogMessage("Unable to get local IP address.", ERROR_LOG);
+            Log.showLogMessage(this.getClass().getSimpleName(), "Unable to get local IP address.", ERROR_LOG);
             shutdown();
         }
 
@@ -186,7 +186,7 @@ public class Server {
     // -----------------------------------------------------------------------//
     
     private void run() {
-        showLogMessage("Receiving requisitions.", INFO_LOG);
+        Log.showLogMessage(this.getClass().getSimpleName(), "Receiving requisitions.", INFO_LOG);
         while (true) {
             try {
 
@@ -199,13 +199,13 @@ public class Server {
                     }
                 }).start();
             } catch (IOException e) {
-                showLogMessage("Failed to connect with client.", ERROR_LOG);
+                Log.showLogMessage(this.getClass().getSimpleName(), "Failed to connect with client.", ERROR_LOG);
             }
         }
     }
 
     public void attendRequisition(Socket clientSocket) {
-        showLogMessage("Requisition received from " + clientSocket.getLocalAddress().toString().replace("/", "") + ".", INFO_LOG);
+        Log.showLogMessage(this.getClass().getSimpleName(), "Requisition received from " + clientSocket.getLocalAddress().toString().replace("/", "") + ".", INFO_LOG);
         
         //PrintWriter pw;
         //BufferedReader br;
@@ -224,7 +224,7 @@ public class Server {
                 
             }
         } catch (IOException e) {
-            showLogMessage("Failed to attend client requisition. Cause: " + e.getCause().getMessage(), INFO_LOG);
+            Log.showLogMessage(this.getClass().getSimpleName(), "Failed to attend client requisition. Cause: " + e.getCause().getMessage(), INFO_LOG);
         } finally {
             
         }
@@ -258,7 +258,7 @@ public class Server {
             response = memcached.get("SD_ListServers").toString();
             serversOnline = new JSONObject(response);
         } catch (NullPointerException e) {
-            showLogMessage("No servers online.", INFO_LOG);
+            Log.showLogMessage(this.getClass().getSimpleName(), "No servers online.", INFO_LOG);
         }
         
         return serversOnline;
@@ -270,7 +270,7 @@ public class Server {
 
             return json;
         } catch (JSONException e) {
-            showLogMessage("Failed to create JSON from file.", ERROR_LOG);
+            Log.showLogMessage(this.getClass().getSimpleName(), "Failed to create JSON from file.", ERROR_LOG);
             shutdown();
         }
 
@@ -301,12 +301,6 @@ public class Server {
     // =======================================================================//
     // Utilities
     // -----------------------------------------------------------------------//
-    
-    public void showLogMessage(String message, String type) {
-        if (showServerLogs) {
-            System.out.println(this.getClass().getSimpleName() + " - " + type + message);
-        }
-    }
 
     public void showConfiguration() {
         if (showSErverConfigurations) {
@@ -320,7 +314,7 @@ public class Server {
     }
 
     public void shutdown() {
-        showLogMessage("Shutting system down.", INFO_LOG);
+        Log.showLogMessage(this.getClass().getSimpleName(), "Shutting system down.", INFO_LOG);
         System.exit(0);
     }
 
