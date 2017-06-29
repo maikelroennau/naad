@@ -5,13 +5,43 @@
  */
 package server;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.Arrays;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  *
- * @author 110453310
+ * @author Maikel Maciel Rönnau
  */
 public class Utilities {
+
+    private static final String CLASS_NAME = "Utilities";
+
+    public static String readConfiguration(String filename) {
+        Log.showLogMessage(CLASS_NAME, "Reading configuration file.", Log.INFO_LOG);
+
+        String result = "";
+
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(filename));
+            StringBuilder sb = new StringBuilder();
+            String line = br.readLine();
+
+            while (line != null) {
+                sb.append(line);
+                line = br.readLine();
+            }
+
+            result = sb.toString();
+        } catch (IOException e) {
+            Log.showLogMessage(CLASS_NAME, "Failed to read configuration file.", Log.ERROR_LOG);
+            shutdown(CLASS_NAME);
+        }
+        return result;
+    }
 
     public static void showConfiguration(Server server) {
         if (Log.SHOW_SERVER_CONFIGURATIONS) {
@@ -22,6 +52,19 @@ public class Utilities {
                     + "\nMemcached port....: " + server.getMemcachedport()
                     + "\nYears.............: " + Arrays.toString(server.getYears()).replace("[", "").replace("]", "") + "\n");
         }
+    }
+
+    public static JSONObject parseJSONConfigurationFile(String data) {
+        try {
+            JSONObject json = new JSONObject(data);
+
+            return json;
+        } catch (JSONException e) {
+            Log.showLogMessage(CLASS_NAME, "Failed to create JSON from file.", Log.ERROR_LOG);
+            shutdown(CLASS_NAME);
+        }
+
+        return null;
     }
 
     public static void shutdown(String className) {
