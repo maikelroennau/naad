@@ -60,13 +60,13 @@ public class MemcachedConnection {
 
             JSONObject registeredServers = getOnlineServers();
 
-            if (registeredServers.isNull("servers")) {
+            if (registeredServers == null | registeredServers.isNull("servers")) {
                 Log.showLogMessage(CLASS_NAME, "Initializing memcached servers registry.", Log.INFO_LOG);
 
                 JSONObject serverJSON = new JSONObject();
-                serverJSON.append("server", getJSONMemcachedMessage(server));
-
-                this.connection.set("SD_ListServers", this.VALID_TIME, server.toString());
+                serverJSON.append("servers", getJSONMemcachedMessage(server));
+                
+                this.connection.set("SD_ListServers", this.VALID_TIME, serverJSON.toString());
             } else {
                 registeredServers.append("servers", getJSONMemcachedMessage(server));
                 this.connection.set("SD_ListServers", this.VALID_TIME, registeredServers.toString());

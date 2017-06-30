@@ -1,0 +1,12 @@
+{
+    "carriers": [
+        {
+            "code": "AA",
+            "name": "American Airlines"
+        },
+        {
+            "iata": "AR",
+            "name": "Aerolineas Argentinas"
+        }
+    ]
+}

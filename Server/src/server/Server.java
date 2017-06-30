@@ -6,6 +6,8 @@
 package server;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -22,8 +24,11 @@ import org.json.JSONObject;
  * @author Maikel Maciel Rönnau
  */
 public class Server {
-    
+
     private final String CONFIGURATION_FILE = "config.json";
+    private final String AIRPORTS = "data/airports.json";
+    private final String CARRIERS = "data/carriers.json";
+
     private final String CLASS_NAME = this.getClass().getSimpleName();
 
     private String serverName;
@@ -38,14 +43,14 @@ public class Server {
     // Connection settings
     private JSONObject jsonConfiguration;
     private ServerSocket connection;
-    
+
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) {
         Server server = new Server();
     }
-    
+
     public Server() {
         readServerConfiguration();
         setServerConfiguration();
@@ -57,7 +62,7 @@ public class Server {
     // =======================================================================//
     // Getters and setters
     // -----------------------------------------------------------------------//
-
+    
     public String getCONFIGURATION_FILE() {
         return CONFIGURATION_FILE;
     }
@@ -85,14 +90,14 @@ public class Server {
     public int getMemcachedport() {
         return memcachedport;
     }
-   
+
     // -----------------------------------------------------------------------//
     // End getters and Setters
     // =======================================================================//
     // =======================================================================//
     // Initialization
     // -----------------------------------------------------------------------//
-
+    
     private void readServerConfiguration() {
         String configuration = Utilities.readConfiguration(CONFIGURATION_FILE);
         this.jsonConfiguration = Utilities.parseJSONConfigurationFile(configuration);
@@ -177,27 +182,53 @@ public class Server {
     }
 
     public void attendRequisition(Socket clientSocket) {
-        Log.showLogMessage(CLASS_NAME, "Requisition received from " + clientSocket.getLocalAddress().toString().replace("/", "") + ".", Log.INFO_LOG);
+        String clientIP = clientSocket.getLocalAddress().toString().replace("/", "") + ".";
+        Log.showLogMessage(CLASS_NAME, "Requisition received from " + clientIP, Log.INFO_LOG);
 
-        //PrintWriter pw;
-        //BufferedReader br;
+        PrintWriter pw;
+        BufferedReader br;
+
         try {
-            PrintWriter pw = new PrintWriter(clientSocket.getOutputStream(), true);
-            BufferedReader br = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            pw = new PrintWriter(clientSocket.getOutputStream(), true);
+            br = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
-            String[] splitedCommand = br.readLine().split("\\s+");
-            String command = splitedCommand[0];
+            try {
 
-            switch (command) {
-                case "GETAVAILABLEYEARS":
-                    pw.println(getAvailableYears().toString());
-                    break;
+                String[] splitedCommand = br.readLine().split("\\s+");
+                String command = splitedCommand[0];
 
+                switch (command) {
+                    case "GETAVAILABLEYEARS":
+                        Log.showLogMessage(CLASS_NAME, "Requisition: " + command, Log.INFO_LOG);
+                        pw.println(getAvailableYears().toString());
+                        break;
+
+                    case "GETAIRPORTS":
+                        Log.showLogMessage(CLASS_NAME, "Requisition: " + command, Log.INFO_LOG);
+                        pw.println(getAvailableAirports().toString());
+
+                        break;
+
+                    case "GETCARRIERS":
+                        Log.showLogMessage(CLASS_NAME, "Requisition: " + command, Log.INFO_LOG);
+                        pw.println(getAvailableCarriers().toString());
+                        break;
+
+                    default:
+                        pw.println(getUnknownCommandMessage());
+                        break;
+                }
+
+                Log.showLogMessage(CLASS_NAME, "Requisition satisfied.", Log.INFO_LOG);
+            } catch (IOException e) {
+                Log.showLogMessage(CLASS_NAME, "Failed to process client requisition. Cause: " + e.getCause().getMessage(), Log.ERROR_LOG);
+            } finally {
+                Log.showLogMessage(CLASS_NAME, "Closing connection with client " + clientIP, Log.INFO_LOG);
+                br.close();
+                pw.close();
             }
         } catch (IOException e) {
-            Log.showLogMessage(CLASS_NAME, "Failed to attend client requisition. Cause: " + e.getCause().getMessage(), Log.INFO_LOG);
-        } finally {
-
+            Log.showLogMessage(CLASS_NAME, "Failed to attend client requisition. Cause: " + e.getCause().getMessage(), Log.ERROR_LOG);
         }
     }
 
@@ -215,8 +246,53 @@ public class Server {
             json.append("years", year);
         }
 
-        System.out.println(json.toString());
         return json;
+    }
+
+    public JSONObject getAvailableAirports() {
+        JSONObject airports;
+
+        try {
+
+            File file = new File(AIRPORTS);
+            FileInputStream fis = new FileInputStream(file);
+
+            byte[] data = new byte[(int) file.length()];
+            fis.read(data);
+            fis.close();
+
+            airports = new JSONObject(new String(data, "UTF-8"));
+        } catch (IOException e) {
+            Log.showLogMessage(CLASS_NAME, "Failed to get airports information. Cause: " + e.getCause().getMessage(), Log.ERROR_LOG);
+            return null;
+        }
+
+        return airports;
+    }
+
+    public JSONObject getAvailableCarriers() {
+        JSONObject carriers;
+
+        try {
+
+            File file = new File(CARRIERS);
+            FileInputStream fis = new FileInputStream(file);
+
+            byte[] data = new byte[(int) file.length()];
+            fis.read(data);
+            fis.close();
+
+            carriers = new JSONObject(new String(data, "UTF-8"));
+        } catch (IOException e) {
+            Log.showLogMessage(CLASS_NAME, "Failed to get carriers information. Cause: " + e.getCause().getMessage(), Log.ERROR_LOG);
+            return null;
+        }
+
+        return carriers;
+    }
+
+    public String getUnknownCommandMessage() {
+        return "Unknown command.";
     }
 
     // -----------------------------------------------------------------------//
