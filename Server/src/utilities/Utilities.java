@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package server;
+package utilities;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import org.json.JSONException;
 import org.json.JSONObject;
+import server.Server;
 
 /**
  *
@@ -40,6 +41,7 @@ public class Utilities {
             Log.showLogMessage(CLASS_NAME, "Failed to read configuration file.", Log.ERROR_LOG);
             shutdown(CLASS_NAME);
         }
+
         return result;
     }
 

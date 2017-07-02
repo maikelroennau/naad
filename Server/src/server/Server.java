@@ -18,6 +18,9 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import org.json.JSONObject;
+import persistence.DatabaseQueryer;
+import utilities.Log;
+import utilities.Utilities;
 
 /**
  *
@@ -41,8 +44,11 @@ public class Server {
     private int memcachedport;
 
     // Connection settings
-    private JSONObject jsonConfiguration;
+    private JSONObject configuration;
     private ServerSocket connection;
+
+    // Database
+    private DatabaseQueryer databaseQueryer;
 
     /**
      * @param args the command line arguments
@@ -52,10 +58,16 @@ public class Server {
     }
 
     public Server() {
+        Log.showLogMessage(CLASS_NAME, "Starting sever startup.", Log.INFO_LOG);
+
         readServerConfiguration();
         setServerConfiguration();
+        getDatabaseQueryer();
         putServerOnline();
         registerToMemcached();
+
+        Log.showLogMessage(CLASS_NAME, "Startup finished with success.", Log.INFO_LOG);
+
         run();
     }
 
@@ -100,10 +112,10 @@ public class Server {
     
     private void readServerConfiguration() {
         String configuration = Utilities.readConfiguration(CONFIGURATION_FILE);
-        this.jsonConfiguration = Utilities.parseJSONConfigurationFile(configuration);
+        this.configuration = Utilities.parseJSONConfigurationFile(configuration);
 
-        if (this.jsonConfiguration == null) {
-            Log.showLogMessage(CLASS_NAME, "Failed to create configutation object.", Log.ERROR_LOG);
+        if (this.configuration == null) {
+            Log.showLogMessage(CLASS_NAME, "Failed to create server configutation object.", Log.ERROR_LOG);
             Utilities.shutdown(CLASS_NAME);
         }
     }
@@ -111,10 +123,10 @@ public class Server {
     private void setServerConfiguration() {
         Log.showLogMessage(CLASS_NAME, "Setting server configuration.", Log.INFO_LOG);
 
-        this.serverName = this.jsonConfiguration.getString("serverName");
-        this.serverPort = this.jsonConfiguration.getInt("portListen");
-        this.memcachedIP = this.jsonConfiguration.getString("memcachedServer");
-        this.memcachedport = this.jsonConfiguration.getInt("memcachedPort");
+        this.serverName = this.configuration.getString("serverName");
+        this.serverPort = this.configuration.getInt("portListen");
+        this.memcachedIP = this.configuration.getString("memcachedServer");
+        this.memcachedport = this.configuration.getInt("memcachedPort");
 
         try {
             this.serverIP = InetAddress.getLocalHost().toString().split("/")[1];
@@ -124,7 +136,7 @@ public class Server {
         }
 
         String years;
-        Object obj = this.jsonConfiguration.get("yearData");
+        Object obj = this.configuration.get("yearData");
         years = obj.toString();
 
         ArrayList<String> readYears = new ArrayList<>();
@@ -137,6 +149,12 @@ public class Server {
 
         Log.showLogMessage(CLASS_NAME, "Server configurations set.", Log.INFO_LOG);
         Utilities.showConfiguration(this);
+    }
+
+    private void getDatabaseQueryer() {
+        Log.showLogMessage(CLASS_NAME, "Establishing connection with the database.", Log.INFO_LOG);
+        this.databaseQueryer = new DatabaseQueryer(this.configuration);
+        Log.showLogMessage(CLASS_NAME, "Database connection established with success.", Log.INFO_LOG);
     }
 
     private void putServerOnline() {

@@ -3,5 +3,10 @@
   "portListen" : 1223,
   "memcachedServer" : "127.0.0.1",
   "memcachedPort" : 11211,
-  "yearData" : [1997, 1998]
+  "yearData" : [1999, 2000],
+  "databaseName" : "naad",
+  "databaseIP" : "127.0.0.1",
+  "databasePort" : 3306,
+  "user" : "root",
+  "password" : "root"
 }
