@@ -1,3 +1,59 @@
+-- Database creation
+
+CREATE DATABASE `naad`;
+USE `naad`;
+
+-- End database creation
+
+-- Carriers table
+
+CREATE TABLE `carriers` (
+  `code` text,
+  `name` text) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+LOAD DATA LOCAL INFILE 'C:\\carriers.csv' 
+INTO TABLE carriers
+COLUMNS TERMINATED BY ','
+OPTIONALLY ENCLOSED BY '"'
+ESCAPED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 LINES;
+
+ALTER TABLE `naad`.`carriers` 
+CHANGE COLUMN `Code` `code` TEXT NULL DEFAULT NULL ,
+CHANGE COLUMN `Description` `name` TEXT NULL DEFAULT NULL ;
+
+-- End carriers table
+
+-- Aiports table
+
+CREATE TABLE `airports` (
+    `iata` text,
+    `airport` text,
+    `city` text,
+    `state` text,
+    `country` text,
+    `lat` double DEFAULT NULL,
+    `long` double DEFAULT NULL ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+LOAD DATA LOCAL INFILE 'C:\\airports.csv' 
+INTO TABLE carriers
+COLUMNS TERMINATED BY ','
+OPTIONALLY ENCLOSED BY '"'
+ESCAPED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 LINES;
+
+ALTER TABLE `new_schema`.`airports` 
+DROP COLUMN `country`,
+DROP COLUMN `state`,
+CHANGE COLUMN `airport` `name` TEXT NULL DEFAULT NULL ,
+CHANGE COLUMN `long` `lng` DOUBLE NULL DEFAULT NULL ;
+
+-- End aiports table
+
+-- Flights table
+
 CREATE TABLE `flights` (
   `Year` int(11) DEFAULT NULL,
   `Month` int(11) DEFAULT NULL,
@@ -30,14 +86,27 @@ CREATE TABLE `flights` (
   `LateAircraftDelay` text
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+-- Flights information import (add more of this section if you have more cvs files)
 
-LOAD DATA LOCAL INFILE 'C:\\ProgramData\\MySQL\\MySQL Server 5.7\\Uploads\\1987.csv' 
+LOAD DATA LOCAL INFILE 'C:\\1987.csv' 
 INTO TABLE flights
 COLUMNS TERMINATED BY ','
 OPTIONALLY ENCLOSED BY '"'
 ESCAPED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 LINES;
+
+/*
+LOAD DATA LOCAL INFILE 'C:\\1988.csv' 
+INTO TABLE flights
+COLUMNS TERMINATED BY ','
+OPTIONALLY ENCLOSED BY '"'
+ESCAPED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 LINES;
+*/
+
+-- End flights information import
 
 ALTER TABLE `naad`.`flights` 
 DROP COLUMN `LateAircraftDelay`,

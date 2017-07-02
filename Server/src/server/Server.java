@@ -240,9 +240,7 @@ public class Server {
 
                     case "GETAIRPORTS":
                         Log.showLogMessage(CLASS_NAME, "Requisition: " + command, Log.INFO_LOG);
-                        pw.flush();
                         pw.println(getAvailableAirports().toString());
-                        pw.flush();
 
                         break;
 
