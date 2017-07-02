@@ -8,10 +8,10 @@ USE `naad`;
 -- Carriers table
 
 CREATE TABLE `carriers` (
-  `code` text,
-  `name` text) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+  `Code` text,
+  `Description` text) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-LOAD DATA LOCAL INFILE 'C:\\carriers.csv' 
+LOAD DATA LOCAL INFILE 'C:\\naad_database\\tables_data\\carriers.csv' 
 INTO TABLE carriers
 COLUMNS TERMINATED BY ','
 OPTIONALLY ENCLOSED BY '"'
@@ -36,7 +36,7 @@ CREATE TABLE `airports` (
     `lat` double DEFAULT NULL,
     `long` double DEFAULT NULL ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-LOAD DATA LOCAL INFILE 'C:\\airports.csv' 
+LOAD DATA LOCAL INFILE 'C:\\naad_database\\tables_data\\airports.csv' 
 INTO TABLE carriers
 COLUMNS TERMINATED BY ','
 OPTIONALLY ENCLOSED BY '"'
@@ -44,7 +44,7 @@ ESCAPED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 LINES;
 
-ALTER TABLE `new_schema`.`airports` 
+ALTER TABLE `naad`.`airports` 
 DROP COLUMN `country`,
 DROP COLUMN `state`,
 CHANGE COLUMN `airport` `name` TEXT NULL DEFAULT NULL ,
@@ -88,7 +88,7 @@ CREATE TABLE `flights` (
 
 -- Flights information import (add more of this section if you have more cvs files)
 
-LOAD DATA LOCAL INFILE 'C:\\1987.csv' 
+LOAD DATA LOCAL INFILE 'C:\\naad_database\\tables_data\\1999.csv' 
 INTO TABLE flights
 COLUMNS TERMINATED BY ','
 OPTIONALLY ENCLOSED BY '"'
@@ -96,15 +96,21 @@ ESCAPED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 LINES;
 
-/*
-LOAD DATA LOCAL INFILE 'C:\\1988.csv' 
+LOAD DATA LOCAL INFILE 'C:\\naad_database\\tables_data\\2000.csv' 
 INTO TABLE flights
 COLUMNS TERMINATED BY ','
 OPTIONALLY ENCLOSED BY '"'
 ESCAPED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 LINES;
-*/
+
+LOAD DATA LOCAL INFILE 'C:\\naad_database\\tables_data\\2001.csv' 
+INTO TABLE flights
+COLUMNS TERMINATED BY ','
+OPTIONALLY ENCLOSED BY '"'
+ESCAPED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 LINES;
 
 -- End flights information import
 
