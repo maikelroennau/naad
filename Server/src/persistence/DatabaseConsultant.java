@@ -6,6 +6,8 @@
 package persistence;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import org.json.JSONObject;
 import utilities.Log;
@@ -15,7 +17,7 @@ import utilities.Utilities;
  *
  * @author Maikel Maciel Rönnau
  */
-public class DatabaseQueryer {
+public class DatabaseConsultant {
 
     private final String CLASS_NAME = this.getClass().getSimpleName();
 
@@ -26,15 +28,15 @@ public class DatabaseQueryer {
     private String password;
     private String url;
 
-    // =======================================================================//
-    // Initialization
-    // -----------------------------------------------------------------------//
-    
-    public DatabaseQueryer(JSONObject configuration) {
+    public DatabaseConsultant(JSONObject configuration) {
         setDatabaseConfiguration(configuration);
         testConnection();
     }
 
+    // =======================================================================//
+    // Initialization
+    // -----------------------------------------------------------------------//
+    
     private void setDatabaseConfiguration(JSONObject configuration) {
         Log.showLogMessage(CLASS_NAME, "Setting database configuration.", Log.INFO_LOG);
 
@@ -73,6 +75,74 @@ public class DatabaseQueryer {
     // Queries
     // -----------------------------------------------------------------------//
     
+    public JSONObject getAirports() {
+        Connection connection;
+
+        try {
+            connection = DatabaseConnection.getConnection(url, user, password);
+
+            String query = "SELECT * FROM airports";
+            PreparedStatement statement = connection.prepareStatement(query);
+
+            ResultSet queryResult = statement.executeQuery(query);
+            JSONObject airports = new JSONObject();
+            JSONObject airport;
+
+            while (queryResult.next()) {
+                airport = new JSONObject();
+
+                airport.put("iata", queryResult.getString("iata"));
+                airport.put("name", queryResult.getString("name"));
+                airport.put("city", queryResult.getString("city"));
+                airport.put("lat", queryResult.getString("lat"));
+                airport.put("lng", queryResult.getString("lng"));
+
+                airports.append("airports", airport);
+            }
+
+            return airports;
+        } catch (SQLException e) {
+            Log.showLogMessage(CLASS_NAME, "Not possible to connect with the database. Cause: " + e.getMessage(), Log.ERROR_LOG);
+        } finally {
+            connection = null;
+        }
+
+        return null;
+    }
+
+    public JSONObject getCarriers() {
+        Connection connection;
+
+        try {
+            connection = DatabaseConnection.getConnection(url, user, password);
+
+            String query = "SELECT * FROM carriers";
+            PreparedStatement statement = connection.prepareStatement(query);
+
+            ResultSet queryResult = statement.executeQuery(query);
+            JSONObject carriers = new JSONObject();
+            JSONObject carrier;
+
+            while (queryResult.next()) {
+                carrier = new JSONObject();
+
+                carrier.put("code", queryResult.getString("code"));
+                carrier.put("name", queryResult.getString("name"));
+
+                carriers.append("airports", carrier);
+            }
+
+            return carriers;
+
+        } catch (SQLException e) {
+            Log.showLogMessage(CLASS_NAME, "Not possible to connect with the database. Cause: " + e.getMessage(), Log.ERROR_LOG);
+        } finally {
+            connection = null;
+        }
+
+        return null;
+    }
+
     public JSONObject getDelays() {
         Connection connection;
 
