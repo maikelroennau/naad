@@ -1,8 +1,0 @@
-{
-    "arrivalOnTimeFlights":503633,
-    "arrivalDelayedFlights":808193,
-    "arrivalDelayedAverageTime":18.745653575321736,
-    "departureOnTimeFlights":740182,
-    "departureDelayedFlights":571644,
-    "departureDelayedAverageTime":18.98217771899994
-}
