@@ -6,8 +6,6 @@
 package server;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -18,7 +16,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import org.json.JSONObject;
-import persistence.DatabaseQueryer;
+import persistence.DatabaseConsultant;
 import utilities.Log;
 import utilities.Utilities;
 
@@ -29,9 +27,6 @@ import utilities.Utilities;
 public class Server {
 
     private final String CONFIGURATION_FILE = "config.json";
-    private final String AIRPORTS = "data/airports.json";
-    private final String CARRIERS = "data/carriers.json";
-
     private final String CLASS_NAME = this.getClass().getSimpleName();
 
     private String serverName;
@@ -39,7 +34,7 @@ public class Server {
     private int serverPort;
     private int[] years;
 
-    private MemcachedConnection memcached;
+    private MemcachedConnection memcached = null;
     private String memcachedIP;
     private int memcachedport;
 
@@ -48,7 +43,7 @@ public class Server {
     private ServerSocket connection;
 
     // Database
-    private DatabaseQueryer databaseQueryer;
+    private DatabaseConsultant databaseConsultant;
 
     /**
      * @param args the command line arguments
@@ -62,12 +57,15 @@ public class Server {
 
         readServerConfiguration();
         setServerConfiguration();
-        getDatabaseQueryer();
+        getDatabaseConsultantConnection();
+
         putServerOnline();
-        registerToMemcached();
+
+        registerServerToMemcached();
+        registerAirportsToMemcached();
+        registerCarriersToMemcached();
 
         Log.showLogMessage(CLASS_NAME, "Startup finished with success.", Log.INFO_LOG);
-
         run();
     }
 
@@ -151,9 +149,9 @@ public class Server {
         Utilities.showConfiguration(this);
     }
 
-    private void getDatabaseQueryer() {
+    private void getDatabaseConsultantConnection() {
         Log.showLogMessage(CLASS_NAME, "Establishing connection with the database.", Log.INFO_LOG);
-        this.databaseQueryer = new DatabaseQueryer(this.configuration);
+        this.databaseConsultant = new DatabaseConsultant(this.configuration);
         Log.showLogMessage(CLASS_NAME, "Database connection established with success.", Log.INFO_LOG);
     }
 
@@ -168,9 +166,28 @@ public class Server {
         }
     }
 
-    private void registerToMemcached() {
-        this.memcached = new MemcachedConnection(this.memcachedIP, this.memcachedport);
-        this.memcached.registerToMemcached(this);
+    private void registerServerToMemcached() {
+        if (this.memcached == null) {
+            this.memcached = new MemcachedConnection(this.memcachedIP, this.memcachedport);
+        }
+
+        this.memcached.registerServerToMemcached(this);
+    }
+
+    private void registerAirportsToMemcached() {
+        if (this.memcached == null) {
+            this.memcached = new MemcachedConnection(this.memcachedIP, this.memcachedport);
+        }
+
+        this.memcached.registerAirportsToMemcached(databaseConsultant);
+    }
+
+    private void registerCarriersToMemcached() {
+        if (this.memcached == null) {
+            this.memcached = new MemcachedConnection(this.memcachedIP, this.memcachedport);
+        }
+
+        this.memcached.registerCarriersToMemcached(databaseConsultant);
     }
 
     // -----------------------------------------------------------------------//
@@ -258,55 +275,15 @@ public class Server {
     // -----------------------------------------------------------------------//
     
     public JSONObject getAvailableYears() {
-        JSONObject json = new JSONObject();
-
-        for (int year : this.years) {
-            json.append("years", year);
-        }
-
-        return json;
+        return memcached.getAvailablerYears();
     }
 
     public JSONObject getAvailableAirports() {
-        JSONObject airports;
-
-        try {
-
-            File file = new File(AIRPORTS);
-            FileInputStream fis = new FileInputStream(file);
-
-            byte[] data = new byte[(int) file.length()];
-            fis.read(data);
-            fis.close();
-
-            airports = new JSONObject(new String(data, "UTF-8"));
-        } catch (IOException e) {
-            Log.showLogMessage(CLASS_NAME, "Failed to get airports information. Cause: " + e.getCause().getMessage(), Log.ERROR_LOG);
-            return null;
-        }
-
-        return airports;
+        return this.databaseConsultant.getAirports();
     }
 
     public JSONObject getAvailableCarriers() {
-        JSONObject carriers;
-
-        try {
-
-            File file = new File(CARRIERS);
-            FileInputStream fis = new FileInputStream(file);
-
-            byte[] data = new byte[(int) file.length()];
-            fis.read(data);
-            fis.close();
-
-            carriers = new JSONObject(new String(data, "UTF-8"));
-        } catch (IOException e) {
-            Log.showLogMessage(CLASS_NAME, "Failed to get carriers information. Cause: " + e.getCause().getMessage(), Log.ERROR_LOG);
-            return null;
-        }
-
-        return carriers;
+        return this.databaseConsultant.getCarriers();
     }
 
     public String getUnknownCommandMessage() {
