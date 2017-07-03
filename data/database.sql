@@ -11,17 +11,16 @@ CREATE TABLE `carriers` (
   `Code` text,
   `Description` text) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-LOAD DATA LOCAL INFILE 'C:\\carriers.csv' 
+LOAD DATA LOCAL INFILE 'C:\\naad_database\\tables_data\\carriers.csv' 
 INTO TABLE carriers
-COLUMNS TERMINATED BY ','
+FIELDS TERMINATED BY ',' 
 OPTIONALLY ENCLOSED BY '"'
-ESCAPED BY '"'
-LINES TERMINATED BY '\n'
+LINES TERMINATED BY '\r\n'
 IGNORE 1 LINES;
 
 ALTER TABLE `naad`.`carriers` 
 CHANGE COLUMN `Code` `code` TEXT NULL DEFAULT NULL ,
-CHANGE COLUMN `Description` `name` TEXT NULL DEFAULT NULL ;
+CHANGE COLUMN `Description` `name` TEXT NULL DEFAULT NULL;
 
 -- End carriers table
 
@@ -36,19 +35,17 @@ CREATE TABLE `airports` (
     `lat` double DEFAULT NULL,
     `long` double DEFAULT NULL ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-LOAD DATA LOCAL INFILE 'C:\\airports.csv' 
-INTO TABLE carriers
-COLUMNS TERMINATED BY ','
+LOAD DATA LOCAL INFILE 'C:\\naad_database\\tables_data\\airports.csv' 
+INTO TABLE airports
+FIELDS TERMINATED BY ',' 
 OPTIONALLY ENCLOSED BY '"'
-ESCAPED BY '"'
-LINES TERMINATED BY '\n'
 IGNORE 1 LINES;
 
 ALTER TABLE `naad`.`airports` 
 DROP COLUMN `country`,
 DROP COLUMN `state`,
-CHANGE COLUMN `airport` `name` TEXT NULL DEFAULT NULL ,
-CHANGE COLUMN `long` `lng` DOUBLE NULL DEFAULT NULL ;
+CHANGE COLUMN `airport` `name` TEXT NULL DEFAULT NULL,
+CHANGE COLUMN `long` `lng` DOUBLE NULL DEFAULT NULL;
 
 -- End aiports table
 
@@ -90,26 +87,20 @@ CREATE TABLE `flights` (
 
 LOAD DATA LOCAL INFILE 'C:\\1999.csv' 
 INTO TABLE flights
-COLUMNS TERMINATED BY ','
-OPTIONALLY ENCLOSED BY '"'
-ESCAPED BY '"'
+FIELDS TERMINATED BY ','
 LINES TERMINATED BY '\n'
 IGNORE 1 LINES;
 
 LOAD DATA LOCAL INFILE 'C:\\2000.csv' 
 INTO TABLE flights
-COLUMNS TERMINATED BY ','
-OPTIONALLY ENCLOSED BY '"'
-ESCAPED BY '"'
+FIELDS TERMINATED BY ','
 LINES TERMINATED BY '\n'
 IGNORE 1 LINES;
 
 /*
 LOAD DATA LOCAL INFILE 'C:\\2001.csv' 
 INTO TABLE flights
-COLUMNS TERMINATED BY ','
-OPTIONALLY ENCLOSED BY '"'
-ESCAPED BY '"'
+FIELDS TERMINATED BY ','
 LINES TERMINATED BY '\n'
 IGNORE 1 LINES;
 */
@@ -128,14 +119,11 @@ DROP COLUMN `Cancelled`,
 DROP COLUMN `TaxiOut`,
 DROP COLUMN `TaxiIn`,
 DROP COLUMN `Distance`,
-DROP COLUMN `Dest`,
-DROP COLUMN `Origin`,
 DROP COLUMN `AirTime`,
 DROP COLUMN `CRSElapsedTime`,
 DROP COLUMN `ActualElapsedTime`,
 DROP COLUMN `TailNum`,
 DROP COLUMN `FlightNum`,
-DROP COLUMN `UniqueCarrier`,
 DROP COLUMN `CRSArrTime`,
 DROP COLUMN `ArrTime`,
 DROP COLUMN `CRSDepTime`,
@@ -146,5 +134,22 @@ ALTER TABLE `naad`.`flights`
 CHANGE COLUMN `Year` `year` INT(11) NULL DEFAULT NULL,
 CHANGE COLUMN `Month` `month` INT(11) NULL DEFAULT NULL,
 CHANGE COLUMN `DayofMonth` `day` INT(11) NULL DEFAULT NULL,
+CHANGE COLUMN `UniqueCarrier` `carrier` TEXT NULL DEFAULT NULL,
+CHANGE COLUMN `Dest` `destination` TEXT NULL DEFAULT NULL,
+CHANGE COLUMN `Origin` `origin` TEXT NULL DEFAULT NULL,
 CHANGE COLUMN `ArrDelay` `arrival_delay` INT(11) NULL DEFAULT NULL,
 CHANGE COLUMN `DepDelay` `departure_delay` INT(11) NULL DEFAULT NULL;
+
+-- Indexes creation
+
+CREATE INDEX year_ar ON naad.flights(year, arrival_delay, departure_delay);
+CREATE INDEX year_month_ar ON naad.flights(year, month, arrival_delay, departure_delay);
+CREATE INDEX year_month_day_ar ON naad.flights(year, month, day, arrival_delay, departure_delay);
+
+CREATE INDEX year_airport_ar ON naad.flights(year, destination(3), arrival_delay, departure_delay);
+CREATE INDEX year_month_airport_ar ON naad.flights(year, month, destination(3), arrival_delay, departure_delay);
+CREATE INDEX year_month_day_airport_ar ON naad.flights(year, month, day, destination(3), arrival_delay, departure_delay);
+
+CREATE INDEX year_airport_carrier_ar ON naad.flights(year, destination(3), carrier(7), arrival_delay, departure_delay);
+CREATE INDEX year_month_airport_carrier_ar ON naad.flights(year, month, destination(3), carrier(7), arrival_delay, departure_delay);
+CREATE INDEX year_month_day_airport_carrier_ar ON naad.flights(year, month, day, destination(3), carrier(7), arrival_delay, departure_delay);
