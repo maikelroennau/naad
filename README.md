@@ -41,9 +41,9 @@ Exemples:
 - GETDELAYDATA 19990215 *(where 1999 is the year and 02 the month and 15 the day)*
 - GETDELAYDATA 1999 SFO *(where SFO is the airport IATA)*
 - GETDELAYDATA 1999 LAN *(where LAN is the carrier)* 
-- GETDELAYDATA \*\*\* \*\*\* \*\*\* *(it is possible to use wildcars as well)*
+- GETDELAYDATA \*\*\* \*\*\* \*\*\* *(use \*\*\* when any of the first two parameters are not set)*
 
-**Server features**
+**Memcached features**
 The memcached server stores all Servers data, like the Server's name, IP address, port, etc. Also stores the results of previous requests made by the Clients, in order to improve the response time.
 
 Every Server must register itsel to memcached, sending a JSON file with its name, localtion (IP address), years the Server is working with, and status (active or inative).
@@ -55,17 +55,17 @@ Every Server must register itsel to memcached, sending a JSON file with its name
 ## Database setup
 - Download the csv files from the [database](http://stat-computing.org/dataexpo/2009/the-data.html)
 - Run the SQL script *database.sql* on *data* folder to create the database and import the csv files.
-- If necessary, add more sections of the code below to load more csv file. Add this in the indicated area on the script *database.sql*:
+- If necessary, add more sections of the code below to load more csv files. Add the code below in the indicated area on the script *database.sql*, changing the path and the filename:
 
 ```
 LOAD DATA LOCAL INFILE 'C:\\Path\\to\\the\\file\\1987.csv' 
 INTO TABLE flights
-COLUMNS TERMINATED BY ','
-OPTIONALLY ENCLOSED BY '"'
-ESCAPED BY '"'
+FIELDS TERMINATED BY ','
 LINES TERMINATED BY '\n'
 IGNORE 1 LINES;
 ```
+- The code for loading the data of carriers and airports is already in the script, just change the path and the file name if necessary.
+
 ## References
 - [Proposal and requisits](https://github.com/selatotal/SistemasDistribuidos/blob/master/Trabalhos/201701/Trabalho2.md)
 - [Database](http://stat-computing.org/dataexpo/2009/the-data.html)
