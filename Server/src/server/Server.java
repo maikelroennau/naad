@@ -247,7 +247,7 @@ public class Server {
                     case "GETCARRIERS":
                         Log.showLogMessage(CLASS_NAME, "Requisition: " + command, Log.INFO_LOG);
                         pw.println(getAvailableCarriers().toString());
-                        Thread.sleep(3000);
+                        Thread.sleep(2000);
                         break;
 
                     default:
@@ -267,8 +267,6 @@ public class Server {
             Log.showLogMessage(CLASS_NAME, "Failed to attend client requisition. Cause: " + e.getCause().getMessage(), Log.ERROR_LOG);
         }
     }
-    
-    
 
     // -----------------------------------------------------------------------//
     // End exection
