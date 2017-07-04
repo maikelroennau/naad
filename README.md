@@ -53,7 +53,7 @@ Every Server must register itsel to memcached, sending a JSON file with its name
 - SD_Carrier - when a Server goes online, it should register the carriers it contains
 
 ## Database setup
-- Download the csv files from the [database](http://stat-computing.org/dataexpo/2009/the-data.html)
+- Download the csv files from the [ASA database](http://stat-computing.org/dataexpo/2009/the-data.html)
 - Run the SQL script [database.sql](data/database.sql) to create the database and import the csv files.
 - If necessary, add more sections of the code below to load more csv files. Add the code below in the indicated area on the script [database.sql](data/database.sql), changing the path and the filename:
 
