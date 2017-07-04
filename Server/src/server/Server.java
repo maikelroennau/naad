@@ -241,12 +241,13 @@ public class Server {
                     case "GETAIRPORTS":
                         Log.showLogMessage(CLASS_NAME, "Requisition: " + command, Log.INFO_LOG);
                         pw.println(getAvailableAirports().toString());
-
+                        Thread.sleep(5000);
                         break;
 
                     case "GETCARRIERS":
                         Log.showLogMessage(CLASS_NAME, "Requisition: " + command, Log.INFO_LOG);
                         pw.println(getAvailableCarriers().toString());
+                        Thread.sleep(3000);
                         break;
 
                     default:
@@ -262,10 +263,12 @@ public class Server {
                 br.close();
                 pw.close();
             }
-        } catch (IOException e) {
+        } catch (IOException | InterruptedException e) {
             Log.showLogMessage(CLASS_NAME, "Failed to attend client requisition. Cause: " + e.getCause().getMessage(), Log.ERROR_LOG);
         }
     }
+    
+    
 
     // -----------------------------------------------------------------------//
     // End exection
