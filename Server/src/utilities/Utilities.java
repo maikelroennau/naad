@@ -8,7 +8,10 @@ package utilities;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import org.json.JSONException;
 import org.json.JSONObject;
 import server.Server;
@@ -67,6 +70,12 @@ public class Utilities {
         }
 
         return null;
+    }
+    
+    public static String getCurrentTimeAndDate() {
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date date = new Date();
+        return dateFormat.format(date);
     }
 
     public static void shutdown(String className) {
