@@ -169,6 +169,9 @@ public class DatabaseConsultant {
 
                 query = "SELECT COUNT(arrival_delay) FROM flights USE INDEX(year_ar) WHERE year = " + searchParameters[1] + " AND arrival_delay > 0";
                 delays.put(ARRIVAL_DELAYED_FLIGHTS, getArrivalDelayedFlights(connection, query));
+                
+                query = "SELECT AVG(arrival_delay) FROM flights USE INDEX(year_ar) WHERE year = " + searchParameters[1] + " AND arrival_delay > 0";
+                delays.put(ARRIVAL_DELAYED_AVERAGE_TIME, getDelayedAverageTime(connection, query));
 
                 return delays;
             } catch (SQLException e) {
@@ -199,6 +202,15 @@ public class DatabaseConsultant {
 
         queryResult.next();
         int result = queryResult.getInt("COUNT(arrival_delay)");
+
+        return result;
+    }
+    private double getDelayedAverageTime(Connection connection, String query) throws SQLException {
+        PreparedStatement statement = connection.prepareStatement(query);
+        ResultSet queryResult = statement.executeQuery(query);
+
+        queryResult.next();
+        int result = queryResult.getInt("AVG(arrival_delay)");
 
         return result;
     }

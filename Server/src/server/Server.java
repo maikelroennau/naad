@@ -227,6 +227,12 @@ public class Server {
         try {
             pw = new PrintWriter(clientSocket.getOutputStream(), true);
             br = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            
+            //DataOutputStream dOut = new DataOutputStream(clientSocket.getOutputStream());
+            //dOut.writeBytes(getAvailableAirports().toString());
+
+            //BufferedWriter bw = new BufferedWriter(pw);
+            //bw.write(getAvailableAirports().toString());
 
             try {
 
