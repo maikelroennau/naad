@@ -18,6 +18,7 @@ import java.util.Arrays;
 import org.json.JSONObject;
 import persistence.DatabaseConsultant;
 import utilities.Log;
+import utilities.UnknownCommandException;
 import utilities.Utilities;
 
 /**
@@ -228,43 +229,69 @@ public class Server {
             br = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
             try {
+                String[] command = br.readLine().split("\\s+");
 
-                String[] splitedCommand = br.readLine().split("\\s+");
-                String command = splitedCommand[0];
-
-                switch (command) {
+                switch (command[0]) {
                     case "GETAVAILABLEYEARS":
-                        Log.showLogMessage(CLASS_NAME, "Requisition: " + command, Log.INFO_LOG);
+                        Log.showLogMessage(CLASS_NAME, "Requisition: " + command[0], Log.INFO_LOG);
                         pw.println(getAvailableYears().toString());
                         break;
 
                     case "GETAIRPORTS":
-                        Log.showLogMessage(CLASS_NAME, "Requisition: " + command, Log.INFO_LOG);
+                        Log.showLogMessage(CLASS_NAME, "Requisition: " + command[0], Log.INFO_LOG);
                         pw.println(getAvailableAirports().toString());
-
+                        Thread.sleep(5000);
                         break;
 
                     case "GETCARRIERS":
-                        Log.showLogMessage(CLASS_NAME, "Requisition: " + command, Log.INFO_LOG);
+                        Log.showLogMessage(CLASS_NAME, "Requisition: " + command[0], Log.INFO_LOG);
                         pw.println(getAvailableCarriers().toString());
+                        Thread.sleep(2000);
+                        break;
+
+                    case "GETDELAYDATA":
+                        if (command.length <= 1) {
+                            throw new UnknownCommandException("GETDELAYDATA needs at least the year parameter.");
+                        }
+
+                        if (attendFromMemcached(command, pw)) {
+                            Log.showLogMessage(CLASS_NAME, "Data found on memcached. ", Log.INFO_LOG);
+                        } else {
+                            Log.showLogMessage(CLASS_NAME, "Requisition: " + command[0], Log.INFO_LOG);
+                            pw.println(getDelayData(command));
+                        }
                         break;
 
                     default:
-                        pw.println(getUnknownCommandMessage());
-                        break;
+                        throw new UnknownCommandException(getUnknownCommandMessage());
                 }
 
                 Log.showLogMessage(CLASS_NAME, "Requisition satisfied.", Log.INFO_LOG);
             } catch (IOException e) {
                 Log.showLogMessage(CLASS_NAME, "Failed to process client requisition. Cause: " + e.getCause().getMessage(), Log.ERROR_LOG);
+            } catch (UnknownCommandException e) {
+                Log.showLogMessage(CLASS_NAME, "Failed to process client requisition. Cause: " + e.getMessage(), Log.ERROR_LOG);
+                pw.println(e.getMessage());
             } finally {
                 Log.showLogMessage(CLASS_NAME, "Closing connection with client " + clientIP, Log.INFO_LOG);
                 br.close();
                 pw.close();
             }
-        } catch (IOException e) {
+        } catch (IOException | InterruptedException e) {
             Log.showLogMessage(CLASS_NAME, "Failed to attend client requisition. Cause: " + e.getCause().getMessage(), Log.ERROR_LOG);
         }
+    }
+
+    private boolean attendFromMemcached(String[] command, PrintWriter pw) {
+        JSONObject delay = this.memcached.getDelayDataStored(command);
+
+        if (delay.toString().equals("{}")) {
+            return false;
+        } else {
+            pw.println(delay);
+        }
+
+        return true;
     }
 
     // -----------------------------------------------------------------------//
@@ -284,6 +311,10 @@ public class Server {
 
     public JSONObject getAvailableCarriers() {
         return this.databaseConsultant.getCarriers();
+    }
+
+    public JSONObject getDelayData(String searchParameters[]) {
+        return this.databaseConsultant.getDelayData(searchParameters);
     }
 
     public String getUnknownCommandMessage() {

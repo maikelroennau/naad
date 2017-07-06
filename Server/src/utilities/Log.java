@@ -20,7 +20,7 @@ public class Log {
 
     public static void showLogMessage(String className, String message, String type) {
         if (SHOW_SERVER_LOGS) {
-            System.out.println(className + " - " + type + message);
+            System.out.println(Utilities.getCurrentTimeAndDate() + " - " + className + " - " + type + message);
         }
     }
 }

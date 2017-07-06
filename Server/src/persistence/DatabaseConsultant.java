@@ -28,6 +28,16 @@ public class DatabaseConsultant {
     private String password;
     private String url;
 
+    private final String ARRIVAL_ON_TIME_FLIGHTS = "arrivalOnTimeFlights";
+    private final String ARRIVAL_DELAYED_FLIGHTS = "arrivalDelayedFlights";
+    private final String ARRIVAL_DELAYED_AVERAGE_TIME = "arrivalDelayedAverageTime";
+
+    private final String DEPARTURE_ON_TIME_FLIGHTS = "departureOnTimeFlights";
+    private final String DEPARTURE_DELAYED_FLIGHTS = "departureDelayedFlights";
+    private final String DEPARTURE_DELAYED_AVERAGE_TIME = "departureDelayedAverageTime";
+
+    private boolean ARRIVAL = true;
+
     public DatabaseConsultant(JSONObject configuration) {
         setDatabaseConfiguration(configuration);
         testConnection();
@@ -72,94 +82,221 @@ public class DatabaseConsultant {
     // End initialization
     // =======================================================================//
     // =======================================================================//
-    // Queries
+    // Startup queries
     // -----------------------------------------------------------------------//
     
     public JSONObject getAirports() {
-        Connection connection;
-
         try {
-            connection = DatabaseConnection.getConnection(url, user, password);
+            Connection connection = DatabaseConnection.getConnection(url, user, password);
 
-            String query = "SELECT * FROM airports";
-            PreparedStatement statement = connection.prepareStatement(query);
+            try {
+                JSONObject airports = new JSONObject();
+                JSONObject airport;
 
-            ResultSet queryResult = statement.executeQuery(query);
-            JSONObject airports = new JSONObject();
-            JSONObject airport;
+                String query = "SELECT * FROM airports;";
+                PreparedStatement statement = connection.prepareStatement(query);
 
-            while (queryResult.next()) {
-                airport = new JSONObject();
+                ResultSet queryResult = statement.executeQuery(query);
 
-                airport.put("iata", queryResult.getString("iata"));
-                airport.put("name", queryResult.getString("name"));
-                airport.put("city", queryResult.getString("city"));
-                airport.put("lat", queryResult.getString("lat"));
-                airport.put("lng", queryResult.getString("lng"));
+                while (queryResult.next()) {
+                    airport = new JSONObject();
 
-                airports.append("airports", airport);
+                    airport.put("iata", queryResult.getString("iata"));
+                    airport.put("name", queryResult.getString("name"));
+                    airport.put("city", queryResult.getString("city"));
+                    airport.put("lat", queryResult.getString("lat"));
+                    airport.put("lng", queryResult.getString("lng"));
+
+                    airports.append("airports", airport);
+                }
+
+                return airports;
+            } catch (SQLException e) {
+                Log.showLogMessage(CLASS_NAME, "Not possible to execute query. Cause: " + e.getMessage(), Log.ERROR_LOG);
+            } finally {
+                connection.close();
             }
-
-            return airports;
         } catch (SQLException e) {
             Log.showLogMessage(CLASS_NAME, "Not possible to connect with the database. Cause: " + e.getMessage(), Log.ERROR_LOG);
-        } finally {
-            connection = null;
         }
 
         return null;
     }
 
     public JSONObject getCarriers() {
-        Connection connection;
-
         try {
-            connection = DatabaseConnection.getConnection(url, user, password);
+            Connection connection = DatabaseConnection.getConnection(url, user, password);
 
-            String query = "SELECT * FROM carriers";
-            PreparedStatement statement = connection.prepareStatement(query);
+            try {
+                JSONObject carriers = new JSONObject();
+                JSONObject carrier;
 
-            ResultSet queryResult = statement.executeQuery(query);
-            JSONObject carriers = new JSONObject();
-            JSONObject carrier;
+                String query = "SELECT * FROM carriers;";
+                PreparedStatement statement = connection.prepareStatement(query);
 
-            while (queryResult.next()) {
-                carrier = new JSONObject();
+                ResultSet queryResult = statement.executeQuery(query);
 
-                carrier.put("code", queryResult.getString("code"));
-                carrier.put("name", queryResult.getString("name"));
+                while (queryResult.next()) {
+                    carrier = new JSONObject();
 
-                carriers.append("airports", carrier);
+                    carrier.put("code", queryResult.getString("code"));
+                    carrier.put("name", queryResult.getString("name"));
+
+                    carriers.append("airports", carrier);
+                }
+
+                return carriers;
+
+            } catch (SQLException e) {
+                Log.showLogMessage(CLASS_NAME, "Not possible to execute query. Cause: " + e.getMessage(), Log.ERROR_LOG);
+            } finally {
+                connection.close();
             }
-
-            return carriers;
-
         } catch (SQLException e) {
             Log.showLogMessage(CLASS_NAME, "Not possible to connect with the database. Cause: " + e.getMessage(), Log.ERROR_LOG);
-        } finally {
-            connection = null;
-        }
-
-        return null;
-    }
-
-    public JSONObject getDelays() {
-        Connection connection;
-
-        try {
-            connection = DatabaseConnection.getConnection(url, user, password);
-
-            return new JSONObject();
-        } catch (SQLException e) {
-            Log.showLogMessage(CLASS_NAME, "Not possible to connect with the database. Cause: " + e.getMessage(), Log.ERROR_LOG);
-        } finally {
-            connection = null;
         }
 
         return null;
     }
 
     // -----------------------------------------------------------------------//
-    // End queries
+    // End startup queries
+    // =======================================================================//
+    // =======================================================================//
+    // Requisition query
+    // -----------------------------------------------------------------------//
+    
+    public JSONObject getDelayData(String searchParamenters[]) {
+        JSONObject delays = new JSONObject();
+
+        try {
+            Connection connection = DatabaseConnection.getConnection(url, user, password);
+
+            String query = "SELECT COUNT(arrival_delay) FROM flights USE INDEX(year_ar) WHERE ";
+
+            try {
+                String builder = "year = " + searchParamenters[1].substring(0, 4) + " ";
+                query += builder;
+            } catch (Exception e) {
+                Log.showLogMessage(CLASS_NAME, "Failed parsing date. Cause: " + e.getMessage(), Log.ERROR_LOG);
+            }
+
+            try {
+                String builder = "AND carrier = '" + searchParamenters[3] + "' ";
+                query += builder;
+            } catch (Exception e) {
+                Log.showLogMessage(CLASS_NAME, "Carrier was not set to the query.", Log.INFO_LOG);
+            }
+
+            try {
+                String builder = "AND airport = '" + searchParamenters[2] + "' ";
+                query += builder;
+            } catch (Exception e) {
+                Log.showLogMessage(CLASS_NAME, "Airport was not set to the query.", Log.INFO_LOG);
+            }
+
+            try {
+                String builder = "AND month = " + searchParamenters[1].substring(4, 6) + " ";
+                query += builder;
+            } catch (Exception e) {
+                Log.showLogMessage(CLASS_NAME, "Month was not set to the query.", Log.INFO_LOG);
+            }
+
+            try {
+                String builder = "AND day = " + searchParamenters[1].substring(6, 8) + " ";
+                query += builder;
+            } catch (Exception e) {
+                Log.showLogMessage(CLASS_NAME, "Day was not set to the query.", Log.INFO_LOG);
+            }
+
+            Log.showLogMessage(CLASS_NAME, "Running query. This can take a few secons, please wait.", Log.INFO_LOG);
+
+            delays.put(ARRIVAL_ON_TIME_FLIGHTS, getOnTimeFlights(connection, query));
+            delays.put(ARRIVAL_DELAYED_FLIGHTS, getDelayedFlights(connection, query));
+            delays.put(ARRIVAL_DELAYED_AVERAGE_TIME, getDelayedAverageTime(connection, query));
+            ARRIVAL = false;
+            delays.put(DEPARTURE_ON_TIME_FLIGHTS, getOnTimeFlights(connection, query));
+            delays.put(DEPARTURE_DELAYED_FLIGHTS, getDelayedFlights(connection, query));
+            delays.put(DEPARTURE_DELAYED_AVERAGE_TIME, getDelayedAverageTime(connection, query));
+        } catch (SQLException e) {
+            Log.showLogMessage(CLASS_NAME, "Not possible to connect with the database. Cause: " + e.getMessage(), Log.ERROR_LOG);
+        }
+
+        return delays;
+    }
+
+    // -----------------------------------------------------------------------//
+    // End requisition query
+    // =======================================================================//
+    // =======================================================================//
+    // Statistics queries
+    // -----------------------------------------------------------------------//
+    
+    private int getOnTimeFlights(Connection connection, String query) throws SQLException {
+        query += "AND arrival_delay <= 0;";
+        String location = "arrival_delay";
+
+        if (ARRIVAL) {
+            query = query.replace("airport", "destination");
+        } else {
+            query = query.replace("airport", "origin");
+            query = query.replace("arrival_delay", "departure_delay");
+            location = "departure_delay";
+        }
+
+        PreparedStatement statement = connection.prepareStatement(query);
+        ResultSet queryResult = statement.executeQuery(query);
+
+        queryResult.next();
+        int result = queryResult.getInt("COUNT(" + location + ")");
+
+        return result;
+    }
+
+    private int getDelayedFlights(Connection connection, String query) throws SQLException {
+        query += "AND arrival_delay > 0;";
+        String location = "arrival_delay";
+
+        if (ARRIVAL) {
+            query = query.replace("airport", "destination");
+        } else {
+            query = query.replace("airport", "origin");
+            query = query.replace("arrival_delay", "departure_delay");
+            location = "departure_delay";
+        }
+
+        PreparedStatement statement = connection.prepareStatement(query);
+        ResultSet queryResult = statement.executeQuery(query);
+
+        queryResult.next();
+        int result = queryResult.getInt("COUNT(" + location + ")");
+
+        return result;
+    }
+
+    private double getDelayedAverageTime(Connection connection, String query) throws SQLException {
+        query += "AND arrival_delay > 0;";
+        query = query.replace("COUNT", "AVG");
+        String location = "arrival_delay";
+
+        if (ARRIVAL) {
+            query = query.replace("airport", "destination");
+        } else {
+            query = query.replace("airport", "origin");
+            query = query.replace("arrival_delay", "departure_delay");
+            location = "departure_delay";
+        }
+
+        PreparedStatement statement = connection.prepareStatement(query);
+        ResultSet queryResult = statement.executeQuery(query);
+
+        queryResult.next();
+        int result = queryResult.getInt("AVG(" + location + ")");
+
+        return result;
+    }
+
+    // -----------------------------------------------------------------------//
+    // End statistics queries
     // =======================================================================//
 }
