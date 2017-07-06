@@ -9,11 +9,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.concurrent.CountDownLatch;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.json.JSONObject;
 import utilities.Log;
 import utilities.Utilities;
@@ -40,7 +35,7 @@ public class DatabaseConsultant {
     private final String DEPARTURE_ON_TIME_FLIGHTS = "departureOnTimeFlights";
     private final String DEPARTURE_DELAYED_FLIGHTS = "departureDelayedFlights";
     private final String DEPARTURE_DELAYED_AVERAGE_TIME = "departureDelayedAverageTime";
-    
+
     private boolean ARRIVAL = true;
 
     public DatabaseConsultant(JSONObject configuration) {
@@ -163,7 +158,7 @@ public class DatabaseConsultant {
 
         return null;
     }
-    
+
     // -----------------------------------------------------------------------//
     // End startup queries
     // =======================================================================//
@@ -185,35 +180,37 @@ public class DatabaseConsultant {
             } catch (Exception e) {
                 Log.showLogMessage(CLASS_NAME, "Failed parsing date. Cause: " + e.getMessage(), Log.ERROR_LOG);
             }
-            
+
             try {
                 String builder = "AND carrier = '" + searchParamenters[3] + "' ";
                 query += builder;
             } catch (Exception e) {
                 Log.showLogMessage(CLASS_NAME, "Carrier was not set to the query.", Log.INFO_LOG);
             }
-            
+
             try {
                 String builder = "AND airport = '" + searchParamenters[2] + "' ";
                 query += builder;
             } catch (Exception e) {
                 Log.showLogMessage(CLASS_NAME, "Airport was not set to the query.", Log.INFO_LOG);
             }
-            
+
             try {
                 String builder = "AND month = " + searchParamenters[1].substring(4, 6) + " ";
                 query += builder;
             } catch (Exception e) {
                 Log.showLogMessage(CLASS_NAME, "Month was not set to the query.", Log.INFO_LOG);
             }
-            
+
             try {
                 String builder = "AND day = " + searchParamenters[1].substring(6, 8) + " ";
                 query += builder;
             } catch (Exception e) {
                 Log.showLogMessage(CLASS_NAME, "Day was not set to the query.", Log.INFO_LOG);
             }
-            
+
+            Log.showLogMessage(CLASS_NAME, "Running query. This can take a few secons, please wait.", Log.INFO_LOG);
+
             delays.put(ARRIVAL_ON_TIME_FLIGHTS, getOnTimeFlights(connection, query));
             delays.put(ARRIVAL_DELAYED_FLIGHTS, getDelayedFlights(connection, query));
             delays.put(ARRIVAL_DELAYED_AVERAGE_TIME, getDelayedAverageTime(connection, query));
@@ -227,144 +224,79 @@ public class DatabaseConsultant {
 
         return delays;
     }
-    
+
     // -----------------------------------------------------------------------//
     // End requisition query
     // =======================================================================//
     // =======================================================================//
     // Statistics queries
     // -----------------------------------------------------------------------//
-
+    
     private int getOnTimeFlights(Connection connection, String query) throws SQLException {
         query += "AND arrival_delay <= 0;";
-        
-        if(ARRIVAL) {
+        String location = "arrival_delay";
+
+        if (ARRIVAL) {
             query = query.replace("airport", "destination");
         } else {
             query = query.replace("airport", "origin");
-            query = query.replace("arrival_delay", "deastination_delay");
+            query = query.replace("arrival_delay", "departure_delay");
+            location = "departure_delay";
         }
-        
+
         PreparedStatement statement = connection.prepareStatement(query);
         ResultSet queryResult = statement.executeQuery(query);
 
         queryResult.next();
-        int result = queryResult.getInt("COUNT(arrival_delay)");
+        int result = queryResult.getInt("COUNT(" + location + ")");
 
         return result;
     }
 
     private int getDelayedFlights(Connection connection, String query) throws SQLException {
-        query += "AND arrival_delay <= 0;";
-        
-        if(ARRIVAL) {
+        query += "AND arrival_delay > 0;";
+        String location = "arrival_delay";
+
+        if (ARRIVAL) {
             query = query.replace("airport", "destination");
         } else {
             query = query.replace("airport", "origin");
-            query = query.replace("arrival_delay", "deastination_delay");
+            query = query.replace("arrival_delay", "departure_delay");
+            location = "departure_delay";
         }
-        
+
         PreparedStatement statement = connection.prepareStatement(query);
         ResultSet queryResult = statement.executeQuery(query);
 
         queryResult.next();
-        int result = queryResult.getInt("COUNT(arrival_delay)");
+        int result = queryResult.getInt("COUNT(" + location + ")");
 
         return result;
     }
+
     private double getDelayedAverageTime(Connection connection, String query) throws SQLException {
-        query += "AND arrival_delay <= 0;";
-        
-        if(ARRIVAL) {
+        query += "AND arrival_delay > 0;";
+        query = query.replace("COUNT", "AVG");
+        String location = "arrival_delay";
+
+        if (ARRIVAL) {
             query = query.replace("airport", "destination");
         } else {
             query = query.replace("airport", "origin");
-            query = query.replace("arrival_delay", "deastination_delay");
+            query = query.replace("arrival_delay", "departure_delay");
+            location = "departure_delay";
         }
-        
+
         PreparedStatement statement = connection.prepareStatement(query);
         ResultSet queryResult = statement.executeQuery(query);
 
         queryResult.next();
-        int result = queryResult.getInt("AVG(arrival_delay)");
+        int result = queryResult.getInt("AVG(" + location + ")");
 
         return result;
     }
-    
+
     // -----------------------------------------------------------------------//
     // End statistics queries
     // =======================================================================//
 }
-
-/*
-
-public JSONObject getArrivalDelayData(Connection connection, String searchParameters[]) throws SQLException {
-        JSONObject arrivalDelays = new JSONObject();
-        
-        try {
-            
-            CountDownLatch flux = new CountDownLatch(3);
-
-            Log.showLogMessage(CLASS_NAME, "Running queries. This step can take a few seconds, please wait.", Log.INFO_LOG);
-
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        String query = "SELECT COUNT(arrival_delay) FROM flights USE INDEX(year_ar) WHERE year = " + searchParameters[1] + " AND arrival_delay <= 0";
-                        arrivalDelays.put(ARRIVAL_ON_TIME_FLIGHTS, getArrivalOnTimeFlights(connection, query));
-                    } catch (SQLException e) {
-                        Log.showLogMessage(CLASS_NAME, "Failed to calculate arrival on time flights. Cause: " + e.getMessage(), Log.ERROR_LOG);
-                    } finally {
-                        flux.countDown();
-                    }
-                }
-            }).start();
-
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        String query = "SELECT COUNT(arrival_delay) FROM flights USE INDEX(year_ar) WHERE year = " + searchParameters[1] + " AND arrival_delay > 0";
-                        arrivalDelays.put(ARRIVAL_DELAYED_FLIGHTS, getArrivalDelayedFlights(connection, query));
-                    } catch (SQLException e) {
-                        Log.showLogMessage(CLASS_NAME, "Failed to calculate arrival delayed flights. Cause: " + e.getMessage(), Log.ERROR_LOG);
-                    } finally {
-                        flux.countDown();
-                    }
-                }
-            }).start();
-
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        String query = "SELECT AVG(arrival_delay) FROM flights USE INDEX(year_ar) WHERE year = " + searchParameters[1] + " AND arrival_delay > 0";
-                        arrivalDelays.put(ARRIVAL_DELAYED_AVERAGE_TIME, getArrivalDelayedAverageTime(connection, query));
-                    } catch (SQLException e) {
-                        Log.showLogMessage(CLASS_NAME, "Failed to calculate average delayed time flights. Cause: " + e.getMessage(), Log.ERROR_LOG);
-                    } finally {
-                        flux.countDown();
-                    }
-                }
-            }).start();
-
-            flux.await();
-
-            /*Log.showLogMessage(CLASS_NAME, "Running queries. This step can take a few seconds, please wait.", Log.INFO_LOG);
-
-            String query = "SELECT COUNT(arrival_delay) FROM flights USE INDEX(year_ar) WHERE year = " + searchParameters[1] + " AND arrival_delay <= 0";
-            arrivalDelays.put(ARRIVAL_ON_TIME_FLIGHTS, getArrivalOnTimeFlights(connection, query));
-
-            query = "SELECT COUNT(arrival_delay) FROM flights USE INDEX(year_ar) WHERE year = " + searchParameters[1] + " AND arrival_delay > 0";
-            arrivalDelays.put(ARRIVAL_DELAYED_FLIGHTS, getArrivalDelayedFlights(connection, query));
-
-            query = "SELECT AVG(arrival_delay) FROM flights USE INDEX(year_ar) WHERE year = " + searchParameters[1] + " AND arrival_delay > 0";
-            arrivalDelays.put(ARRIVAL_DELAYED_AVERAGE_TIME, getArrivalDelayedAverageTime(connection, query));*//*
-        } catch (InterruptedException e) {
-            Log.showLogMessage(CLASS_NAME, "Failed to execute query. Cause: " + e.getMessage(), Log.ERROR_LOG);
-        }
-        return arrivalDelays;
-    }
-
-*/

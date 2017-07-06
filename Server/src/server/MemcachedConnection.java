@@ -49,7 +49,6 @@ public class MemcachedConnection {
     // Initialization
     // -----------------------------------------------------------------------//
     
-
     private MemcachedClient getConnection() {
         Log.showLogMessage(CLASS_NAME, "Connecting to memcached.", Log.INFO_LOG);
         MemcachedClient memcached;
@@ -72,7 +71,6 @@ public class MemcachedConnection {
     // Requisitions
     // -----------------------------------------------------------------------//
     
-
     public void registerServerToMemcached(Server server) {
         try {
             Log.showLogMessage(CLASS_NAME, "Registering server to memcached.", Log.INFO_LOG);
@@ -138,11 +136,11 @@ public class MemcachedConnection {
 
                 for (String year : json.get("year").toString().replaceAll("\\[|\\]", "").split(",")) {
                     serverYears.add(Integer.parseInt(year));
-                    
+
                 }
             }
-            
-            for(int year : serverYears) {
+
+            for (int year : serverYears) {
                 years.append("year", year);
             }
 
@@ -154,10 +152,48 @@ public class MemcachedConnection {
         return years;
     }
 
+    public JSONObject getDelayDataStored(String[] command) {
+        JSONObject delay = new JSONObject();
+        String data = "";
+
+        try {
+            String key = "SD_Data_";
+
+            try {
+                key += " " + command[1];
+            } catch (Exception e) {
+            }
+
+            try {
+                key += " " + command[2];
+            } catch (Exception e) {
+            }
+
+            try {
+                key += " " + command[3];
+            } catch (Exception e) {
+            }
+
+            data = this.connection.get(key).toString();
+            delay = new JSONObject(data);
+            data = key;
+        } catch (NullPointerException | IllegalArgumentException e) {
+            Log.showLogMessage(CLASS_NAME, "Data not found.", Log.INFO_LOG);
+        }
+        
+        saveResultToMemcached(delay, data);
+        return delay;
+    }
+
+    public void saveResultToMemcached(JSONObject result, String command) {
+        Log.showLogMessage(CLASS_NAME, "Storing result to memcached.", Log.INFO_LOG);
+        this.connection.set(command, this.VALID_TIME, command);
+    }
+    
     // -----------------------------------------------------------------------//
     // End Requisitions
     // =======================================================================//
-
+    
     private JSONObject getOnlineServers() {
         String response;
         JSONObject serversOnline = new JSONObject();

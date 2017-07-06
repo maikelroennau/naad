@@ -227,15 +227,8 @@ public class Server {
         try {
             pw = new PrintWriter(clientSocket.getOutputStream(), true);
             br = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            
-            //DataOutputStream dOut = new DataOutputStream(clientSocket.getOutputStream());
-            //dOut.writeBytes(getAvailableAirports().toString());
-
-            //BufferedWriter bw = new BufferedWriter(pw);
-            //bw.write(getAvailableAirports().toString());
 
             try {
-
                 String[] command = br.readLine().split("\\s+");
 
                 switch (command[0]) {
@@ -261,8 +254,12 @@ public class Server {
                             throw new UnknownCommandException("GETDELAYDATA needs at least the year parameter.");
                         }
 
-                        Log.showLogMessage(CLASS_NAME, "Requisition: " + command[0], Log.INFO_LOG);
-                        pw.println(getDelayData(command));
+                        if (attendFromMemcached(command, pw)) {
+                            Log.showLogMessage(CLASS_NAME, "Data found on memcached. ", Log.INFO_LOG);
+                        } else {
+                            Log.showLogMessage(CLASS_NAME, "Requisition: " + command[0], Log.INFO_LOG);
+                            pw.println(getDelayData(command));
+                        }
                         break;
 
                     default:
@@ -283,6 +280,18 @@ public class Server {
         } catch (IOException | InterruptedException e) {
             Log.showLogMessage(CLASS_NAME, "Failed to attend client requisition. Cause: " + e.getCause().getMessage(), Log.ERROR_LOG);
         }
+    }
+
+    private boolean attendFromMemcached(String[] command, PrintWriter pw) {
+        JSONObject delay = this.memcached.getDelayDataStored(command);
+
+        if (delay.toString().equals("{}")) {
+            return false;
+        } else {
+            pw.println(delay);
+        }
+
+        return true;
     }
 
     // -----------------------------------------------------------------------//
