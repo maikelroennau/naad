@@ -240,13 +240,11 @@ public class Server {
                     case "GETAIRPORTS":
                         Log.showLogMessage(CLASS_NAME, "Requisition: " + command[0], Log.INFO_LOG);
                         pw.println(getAvailableAirports().toString());
-                        Thread.sleep(5000);
                         break;
 
                     case "GETCARRIERS":
                         Log.showLogMessage(CLASS_NAME, "Requisition: " + command[0], Log.INFO_LOG);
                         pw.println(getAvailableCarriers().toString());
-                        Thread.sleep(2000);
                         break;
 
                     case "GETDELAYDATA":
@@ -254,12 +252,8 @@ public class Server {
                             throw new UnknownCommandException("GETDELAYDATA needs at least the year parameter.");
                         }
 
-                        if (attendFromMemcached(command, pw)) {
-                            Log.showLogMessage(CLASS_NAME, "Data found on memcached. ", Log.INFO_LOG);
-                        } else {
-                            Log.showLogMessage(CLASS_NAME, "Requisition: " + command[0], Log.INFO_LOG);
-                            pw.println(getDelayData(command));
-                        }
+                        Log.showLogMessage(CLASS_NAME, "Requisition: " + command[0], Log.INFO_LOG);
+                        pw.println(getDelayData(command));
                         break;
 
                     default:
@@ -277,7 +271,7 @@ public class Server {
                 br.close();
                 pw.close();
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             Log.showLogMessage(CLASS_NAME, "Failed to attend client requisition. Cause: " + e.getCause().getMessage(), Log.ERROR_LOG);
         }
     }
